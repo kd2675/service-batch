@@ -24,33 +24,11 @@ import java.util.Map;
 @Configuration
 @EnableTransactionManagement
 @EnableJpaRepositories(
-        basePackages = "com.example.batch.database.batch.repository",
+        basePackages = "com.service.batch.database.batch.repository",
         entityManagerFactoryRef = "batchEntityManagerFactory",
         transactionManagerRef = "batchTransactionManager"
 )
 public class BatchDataConfig {
-//    private DataSource createHikariDataSource(String propertiesPrefix) {
-//        DataSourceProperties dataSourceProperties = new DataSourceProperties();
-//        dataSourceProperties.setName(propertiesPrefix);
-//        return dataSourceProperties
-//                .initializeDataSourceBuilder()
-//                .type(HikariDataSource.class)
-//                .build();
-//    }
-//
-//    @Primary
-//    @Bean
-//    @ConfigurationProperties("database.datasource.batch.master.configure")
-//    public DataSource batchMasterDatasource() {
-//        return createHikariDataSource("database.datasource.batch.master");
-//    }
-//
-//    @Bean
-//    @ConfigurationProperties("database.datasource.batch.slave1.configure")
-//    public DataSource batchSlave1Datasource() {
-//        return createHikariDataSource("database.datasource.batch.slave1");
-//    }
-
     @Bean
     @ConfigurationProperties("database.datasource.batch.master")
     public DataSourceProperties batchMasterDatasourceProperties() {
@@ -110,7 +88,7 @@ public class BatchDataConfig {
         properties.put("hibernate.use_sql_comments", true);
 
         return builder.dataSource(new LazyConnectionDataSourceProxy(routingDataSource))
-                .packages("com.example.batch.database.batch.entity")
+                .packages("com.service.batch.database.batch.entity")
                 .properties(properties)
                 .persistenceUnit("batchEntityManagerFactory")
                 .build();

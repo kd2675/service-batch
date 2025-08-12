@@ -22,7 +22,7 @@ import java.util.Map;
 @Configuration
 @EnableTransactionManagement
 @EnableJpaRepositories(
-        basePackages = {"org.example.database.database.auth.repository", "com.example.batch.database.pub.repository"},
+        basePackages = {"org.example.database.database.auth.repository", "com.service.batch.database.pub.repository"},
         entityManagerFactoryRef = "pubEntityManagerFactory",
         transactionManagerRef = "pubTransactionManager"
 )
@@ -85,7 +85,7 @@ public class PubDataConfig {
 
         return builder
                 .dataSource(new LazyConnectionDataSourceProxy(routingDataSource))
-                .packages("org.example.database.database.auth.entity", "com.example.batch.database.pub.entity")
+                .packages("org.example.database.database.auth.entity", "com.service.batch.database.pub.entity")
                 .properties(properties)
                 .persistenceUnit("pubEntityManagerFactory")
                 .build();

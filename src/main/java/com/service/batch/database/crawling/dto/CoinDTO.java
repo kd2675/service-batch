@@ -1,6 +1,6 @@
 package com.service.batch.database.crawling.dto;
 
-import com.example.batch.database.crawling.entity.CoinEntity;
+import com.service.batch.database.crawling.entity.CoinEntity;
 import lombok.Data;
 
 import java.time.LocalDateTime;

@@ -1,6 +1,6 @@
 package com.service.batch.database.pub.dto;
 
-import com.example.batch.database.pub.entity.OrderEntity;
+import com.service.batch.database.pub.entity.OrderEntity;
 import lombok.Getter;
 import lombok.ToString;
 import org.example.database.common.jpa.CommonDateDTO;

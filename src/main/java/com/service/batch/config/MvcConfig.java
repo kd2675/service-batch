@@ -65,24 +65,6 @@ public class MvcConfig implements WebMvcConfigurer {
         return new RestTemplate(factory);
     }
 
-    @Bean
-    public ChromeRecord chromeRecord() {
-        ChromeOptions options = new ChromeOptions();
-        options.addArguments("--headless");
-        options.addArguments("--no-sandbox");
-        options.addArguments("--single-process");
-        options.addArguments("--disable-dev-shm-usage");
-        options.addArguments("--start-maximized");
-//        InternetExplorerOptions options = new InternetExplorerOptions();
-//        options.setCapability("ignoreProtectedModeSettings", true);
-
-        WebDriver webDriver = new ChromeDriver(options);
-        WebDriverWait webDriverWait = new WebDriverWait(webDriver, Duration.ofSeconds(10));
-
-        ChromeRecord chromeRec = new ChromeRecord(webDriver, webDriverWait);
-        return chromeRec;
-    }
-
     @Override
     public void extendMessageConverters(List<HttpMessageConverter<?>> converters) {
         Jackson2ObjectMapperBuilder builder = new Jackson2ObjectMapperBuilder();

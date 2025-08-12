@@ -1,6 +1,6 @@
 package com.service.batch.database.pub.repository;
 
-import com.example.batch.database.pub.entity.OrderEntity;
+import com.service.batch.database.pub.entity.OrderEntity;
 import org.example.database.database.auth.entity.UserEntity;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.lang.NonNull;

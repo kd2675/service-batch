@@ -1,6 +1,6 @@
 spring:
   application:
-    name: serverapi
+    name: service-batch
   profiles:
     active: local
     group:

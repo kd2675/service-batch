@@ -22,7 +22,7 @@ import java.util.Map;
 @Configuration
 @EnableTransactionManagement
 @EnableJpaRepositories(
-        basePackages = "com.example.batch.database.crawling.repository",
+        basePackages = "com.service.batch.database.crawling.repository",
         entityManagerFactoryRef = "crawlingEntityManagerFactory",
         transactionManagerRef = "crawlingTransactionManager"
 )
@@ -84,7 +84,7 @@ public class CrawlingDataConfig {
         properties.put("hibernate.use_sql_comments", true);
 
         return builder.dataSource(new LazyConnectionDataSourceProxy(routingDataSource))
-                .packages("com.example.batch.database.crawling.entity")
+                .packages("com.service.batch.database.crawling.entity")
                 .properties(properties)
                 .persistenceUnit("crawlingEntityManagerFactory")
                 .build();
