@@ -13,12 +13,12 @@ import java.util.HashMap;
 @Configuration
 @EnableJpaAuditing // JPA Auditing 활성화
 public class JpaConfig {
-    @Bean
-    public DataSource dataSource() {
-        return DataSourceBuilder.create().build();
-    }
-    @Bean
-    public EntityManagerFactoryBuilder entityManagerFactoryBuilder() {
-        return new EntityManagerFactoryBuilder(new HibernateJpaVendorAdapter(), new HashMap<>(), null);
-    }
+//    @Bean
+//    public DataSource dataSource() {
+//        return DataSourceBuilder.create().build();
+//    }
+//    @Bean
+//    public EntityManagerFactoryBuilder entityManagerFactoryBuilder() {
+//        return new EntityManagerFactoryBuilder(new HibernateJpaVendorAdapter(), new HashMap<>(), null);
+//    }
 }
