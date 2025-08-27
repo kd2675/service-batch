@@ -10,69 +10,77 @@ database:
   datasource:
     pub:
       master:
-        url: jdbc:mysql://mysql-10490:3306/REP?zeroDateTimeBehavior=convertToNull&useLegacyDatetimeCode=false&serverTimezone=Asia/Seoul&noAccessToProcedureBodies=true&useSSL=false&allowPublicKeyRetrieval=true
+        url: jdbc:mysql://mysql-10490:3306/REP?zeroDateTimeBehavior=convertToNull&useLegacyDatetimeCode=false&serverTimezone=Asia/Seoul&noAccessToProcedureBodies=true&useSSL=false&allowPublicKeyRetrieval=true&autoReconnect=true&maxReconnects=3
         username: root
         password: 1234
         driver-class-name: com.mysql.cj.jdbc.Driver
         maximum-pool-size: 8
+        minimum-idle: 2
         connection-timeout: 30000
         maxLifetime: 1800000
       slave1:
-        url: jdbc:mysql://mysql-10490:3306/REP?zeroDateTimeBehavior=convertToNull&useLegacyDatetimeCode=false&serverTimezone=Asia/Seoul&noAccessToProcedureBodies=true&useSSL=false&allowPublicKeyRetrieval=true
+        url: jdbc:mysql://mysql-10490:3306/REP?zeroDateTimeBehavior=convertToNull&useLegacyDatetimeCode=false&serverTimezone=Asia/Seoul&noAccessToProcedureBodies=true&useSSL=false&allowPublicKeyRetrieval=true&autoReconnect=true&maxReconnects=3
         username: root
         password: 1234
         driver-class-name: com.mysql.cj.jdbc.Driver
         maximum-pool-size: 8
+        minimum-idle: 1
         connection-timeout: 30000
         maxLifetime: 1800000
     log:
       master:
-        url: jdbc:mysql://mysql-10490:3306/LOG?zeroDateTimeBehavior=convertToNull&useLegacyDatetimeCode=false&serverTimezone=Asia/Seoul&noAccessToProcedureBodies=true&useSSL=false&allowPublicKeyRetrieval=true
+        url: jdbc:mysql://mysql-10490:3306/LOG?zeroDateTimeBehavior=convertToNull&useLegacyDatetimeCode=false&serverTimezone=Asia/Seoul&noAccessToProcedureBodies=true&useSSL=false&allowPublicKeyRetrieval=true&autoReconnect=true&maxReconnects=3
         username: root
         password: 1234
         driver-class-name: com.mysql.cj.jdbc.Driver
         maximum-pool-size: 8
+        minimum-idle: 2
         connection-timeout: 30000
         maxLifetime: 1800000
       slave1:
-        url: jdbc:mysql://mysql-10490:3306/LOG?zeroDateTimeBehavior=convertToNull&useLegacyDatetimeCode=false&serverTimezone=Asia/Seoul&noAccessToProcedureBodies=true&useSSL=false&allowPublicKeyRetrieval=true
+        url: jdbc:mysql://mysql-10490:3306/LOG?zeroDateTimeBehavior=convertToNull&useLegacyDatetimeCode=false&serverTimezone=Asia/Seoul&noAccessToProcedureBodies=true&useSSL=false&allowPublicKeyRetrieval=true&autoReconnect=true&maxReconnects=3
         username: root
         password: 1234
         driver-class-name: com.mysql.cj.jdbc.Driver
         maximum-pool-size: 8
+        minimum-idle: 1
         connection-timeout: 30000
         maxLifetime: 1800000
     batch:
       master:
-        url: jdbc:mysql://mysql-10490:3306/BATCH?zeroDateTimeBehavior=convertToNull&useLegacyDatetimeCode=false&serverTimezone=Asia/Seoul&noAccessToProcedureBodies=true&useSSL=false&allowPublicKeyRetrieval=true
+        url: jdbc:mysql://mysql-10490:3306/BATCH?zeroDateTimeBehavior=convertToNull&useLegacyDatetimeCode=false&serverTimezone=Asia/Seoul&noAccessToProcedureBodies=true&useSSL=false&allowPublicKeyRetrieval=true&autoReconnect=true&maxReconnects=3
         username: root
         password: 1234
         driver-class-name: com.mysql.cj.jdbc.Driver
         maximum-pool-size: 8
+        minimum-idle: 2
         connection-timeout: 30000
         maxLifetime: 1800000
       slave1:
-        url: jdbc:mysql://mysql-10490:3306/BATCH?zeroDateTimeBehavior=convertToNull&useLegacyDatetimeCode=false&serverTimezone=Asia/Seoul&noAccessToProcedureBodies=true&useSSL=false&allowPublicKeyRetrieval=true
+        url: jdbc:mysql://mysql-10490:3306/BATCH?zeroDateTimeBehavior=convertToNull&useLegacyDatetimeCode=false&serverTimezone=Asia/Seoul&noAccessToProcedureBodies=true&useSSL=false&allowPublicKeyRetrieval=true&autoReconnect=true&maxReconnects=3
         username: root
         password: 1234
         driver-class-name: com.mysql.cj.jdbc.Driver
         maximum-pool-size: 8
+        minimum-idle: 1
         connection-timeout: 30000
         maxLifetime: 1800000
     crawling:
       master:
-        url: jdbc:mysql://mysql-10490:3306/CRAWLING?zeroDateTimeBehavior=convertToNull&useLegacyDatetimeCode=false&serverTimezone=Asia/Seoul&noAccessToProcedureBodies=true&useSSL=false&allowPublicKeyRetrieval=true
+        url: jdbc:mysql://mysql-10490:3306/CRAWLING?zeroDateTimeBehavior=convertToNull&useLegacyDatetimeCode=false&serverTimezone=Asia/Seoul&noAccessToProcedureBodies=true&useSSL=false&allowPublicKeyRetrieval=true&autoReconnect=true&maxReconnects=3
         username: root
         password: 1234
         driver-class-name: com.mysql.cj.jdbc.Driver
         maximum-pool-size: 8
+        minimum-idle: 2
         connection-timeout: 30000
         maxLifetime: 1800000
       slave1:
-        url: jdbc:mysql://mysql-10490:3306/BATCH?zeroDateTimeBehavior=convertToNull&useLegacyDatetimeCode=false&serverTimezone=Asia/Seoul&noAccessToProcedureBodies=true&useSSL=false&allowPublicKeyRetrieval=true
+        url: jdbc:mysql://mysql-10490:3306/BATCH?zeroDateTimeBehavior=convertToNull&useLegacyDatetimeCode=false&serverTimezone=Asia/Seoul&noAccessToProcedureBodies=true&useSSL=false&allowPublicKeyRetrieval=true&autoReconnect=true&maxReconnects=3
         username: root
         password: 1234
         driver-class-name: com.mysql.cj.jdbc.Driver
         maximum-pool-size: 8
+        minimum-idle: 1
         connection-timeout: 30000
         maxLifetime: 1800000
