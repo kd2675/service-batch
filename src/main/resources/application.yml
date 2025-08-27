@@ -1,4 +1,7 @@
 management:
+  health:
+    redis:
+      enabled: false  # Redis 헬스체크만 비활성화
   endpoints:
     web:
       exposure:
