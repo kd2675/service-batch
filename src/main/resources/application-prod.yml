@@ -14,7 +14,7 @@ database:
         username: root
         password: 1234
         driver-class-name: com.mysql.cj.jdbc.Driver
-        maximum-pool-size: 8
+        maximum-pool-size: 4
         minimum-idle: 2
         connection-timeout: 30000
         maxLifetime: 1800000
@@ -23,7 +23,7 @@ database:
         username: root
         password: 1234
         driver-class-name: com.mysql.cj.jdbc.Driver
-        maximum-pool-size: 8
+        maximum-pool-size: 4
         minimum-idle: 1
         connection-timeout: 30000
         maxLifetime: 1800000
@@ -33,7 +33,7 @@ database:
         username: root
         password: 1234
         driver-class-name: com.mysql.cj.jdbc.Driver
-        maximum-pool-size: 8
+        maximum-pool-size: 4
         minimum-idle: 2
         connection-timeout: 30000
         maxLifetime: 1800000
@@ -42,7 +42,7 @@ database:
         username: root
         password: 1234
         driver-class-name: com.mysql.cj.jdbc.Driver
-        maximum-pool-size: 8
+        maximum-pool-size: 4
         minimum-idle: 1
         connection-timeout: 30000
         maxLifetime: 1800000
@@ -52,7 +52,7 @@ database:
         username: root
         password: 1234
         driver-class-name: com.mysql.cj.jdbc.Driver
-        maximum-pool-size: 8
+        maximum-pool-size: 4
         minimum-idle: 2
         connection-timeout: 30000
         maxLifetime: 1800000
@@ -61,7 +61,7 @@ database:
         username: root
         password: 1234
         driver-class-name: com.mysql.cj.jdbc.Driver
-        maximum-pool-size: 8
+        maximum-pool-size: 4
         minimum-idle: 1
         connection-timeout: 30000
         maxLifetime: 1800000
@@ -71,7 +71,7 @@ database:
         username: root
         password: 1234
         driver-class-name: com.mysql.cj.jdbc.Driver
-        maximum-pool-size: 8
+        maximum-pool-size: 4
         minimum-idle: 2
         connection-timeout: 30000
         maxLifetime: 1800000
@@ -80,7 +80,7 @@ database:
         username: root
         password: 1234
         driver-class-name: com.mysql.cj.jdbc.Driver
-        maximum-pool-size: 8
+        maximum-pool-size: 4
         minimum-idle: 1
         connection-timeout: 30000
         maxLifetime: 1800000
