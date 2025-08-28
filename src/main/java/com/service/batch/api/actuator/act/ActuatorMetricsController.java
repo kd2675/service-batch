@@ -369,8 +369,13 @@ public class ActuatorMetricsController {
                          responseTime < 5000.0 && 
                          threads < 500;
         
-        log.info("건강성 체크 - CPU: {:.1f}%, Memory: {:.1f}%, ResponseTime: {:.1f}ms, Threads: {}, Healthy: {}", 
-                cpu, memory, responseTime, threads, healthy);
+        // ✅ 일관되게 모두 String.format()으로 처리
+        log.info("건강성 체크 - CPU: {}%, Memory: {}%, ResponseTime: {}ms, Threads: {}, Healthy: {}", 
+                String.format("%.1f", cpu), 
+                String.format("%.1f", memory), 
+                String.format("%.1f", responseTime), 
+                threads, 
+                healthy);
         
         return healthy;
     }
