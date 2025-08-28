@@ -1,5 +1,6 @@
 package com.service.batch.api.actuator.act;
 
+import jakarta.annotation.PostConstruct;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -27,7 +28,13 @@ public class ActuatorMetricsController {
     @Autowired
     private MeterRegistry meterRegistry;
     
-    private final String instanceId = getInstanceId();
+    private String instanceId;
+    
+    @PostConstruct
+    public void initializeInstanceId() {
+        this.instanceId = getHostname();
+        log.info("🚀 Instance ID 초기화 완료: {}", instanceId);
+    }
     
     /**
      * MeterRegistry를 활용한 부하 정보 수집 (Spring Boot 3.x 호환)
@@ -63,7 +70,7 @@ public class ActuatorMetricsController {
             metrics.put("loadScore", loadScore);
             metrics.put("isHealthy", isHealthy(metrics));
             
-            log.debug("메트릭 수집 완료: {}, 부하점수: {:.2f}", instanceId, loadScore);
+            log.info("메트릭 수집 완료: {}, 부하점수: {:.2f}", instanceId, loadScore);
             
         } catch (Exception e) {
             log.error("메트릭 수집 실패: {}", e.getMessage(), e);
@@ -72,6 +79,34 @@ public class ActuatorMetricsController {
         }
         
         return metrics;
+    }
+    
+    /**
+     * ✅ 가장 단순한 hostname 추출 (instance ID로 직접 사용)
+     */
+    private String getHostname() {
+        try {
+            String hostname = InetAddress.getLocalHost().getHostName();
+            // 호스트명을 안전한 문자만 사용하도록 정리
+            String safeHostname = hostname.replaceAll("[^a-zA-Z0-9-]", "").toLowerCase();
+                          
+            log.debug("호스트명 추출: {} -> {}", hostname, safeHostname);
+            return safeHostname;
+            
+        } catch (Exception e) {
+            log.warn("호스트명 추출 실패, 대체 방법 시도: {}", e.getMessage());
+            
+            // Docker 환경에서는 컨테이너 ID 사용 시도
+            String containerId = System.getenv("HOSTNAME");
+            if (containerId != null && !containerId.isEmpty()) {
+                String safeContainerId = containerId.replaceAll("[^a-zA-Z0-9-]", "").toLowerCase();
+                log.debug("컨테이너 ID 사용: {}", safeContainerId);
+                return safeContainerId;
+            }
+            
+            // 최종 fallback
+            return "unknown-host";
+        }
     }
     
     /**
@@ -85,7 +120,7 @@ public class ActuatorMetricsController {
                 return cpuValue * 100.0;
             }
         } catch (Exception e) {
-            log.debug("CPU 사용률 MeterRegistry 수집 실패: {}", e.getMessage());
+            log.error("CPU 사용률 MeterRegistry 수집 실패: {}", e.getMessage());
         }
         
         // Fallback: OperatingSystemMXBean 사용 (Java 8+)
@@ -97,7 +132,7 @@ public class ActuatorMetricsController {
                 return sunOsBean.getProcessCpuLoad() * 100.0;
             }
         } catch (Exception e) {
-            log.debug("CPU 사용률 직접 수집 실패: {}", e.getMessage());
+            log.error("CPU 사용률 직접 수집 실패: {}", e.getMessage());
         }
         
         return 0.0;
@@ -124,7 +159,7 @@ public class ActuatorMetricsController {
                 }
             }
         } catch (Exception e) {
-            log.debug("메모리 사용률 MeterRegistry 수집 실패: {}", e.getMessage());
+            log.error("메모리 사용률 MeterRegistry 수집 실패: {}", e.getMessage());
         }
         
         // Fallback: MemoryMXBean 직접 사용
@@ -137,7 +172,7 @@ public class ActuatorMetricsController {
                 return ((double) used / max) * 100.0;
             }
         } catch (Exception e) {
-            log.debug("메모리 사용률 직접 수집 실패: {}", e.getMessage());
+            log.error("메모리 사용률 직접 수집 실패: {}", e.getMessage());
         }
         
         return 0.0;
@@ -153,7 +188,7 @@ public class ActuatorMetricsController {
                 return (int) threadGauge.value();
             }
         } catch (Exception e) {
-            log.debug("스레드 수 MeterRegistry 수집 실패: {}", e.getMessage());
+            log.error("스레드 수 MeterRegistry 수집 실패: {}", e.getMessage());
         }
         
         // Fallback: ThreadMXBean 직접 사용
@@ -161,7 +196,7 @@ public class ActuatorMetricsController {
             ThreadMXBean threadBean = ManagementFactory.getThreadMXBean();
             return threadBean.getThreadCount();
         } catch (Exception e) {
-            log.debug("스레드 수 직접 수집 실패: {}", e.getMessage());
+            log.error("스레드 수 직접 수집 실패: {}", e.getMessage());
         }
         
         return 0;
@@ -177,7 +212,7 @@ public class ActuatorMetricsController {
                 return timer.mean(TimeUnit.MILLISECONDS);
             }
         } catch (Exception e) {
-            log.debug("응답시간 수집 실패: {}", e.getMessage());
+            log.error("응답시간 수집 실패: {}", e.getMessage());
         }
         
         return 0.0;
@@ -199,7 +234,7 @@ public class ActuatorMetricsController {
                 return (long) counter.count();
             }
         } catch (Exception e) {
-            log.debug("요청 수 수집 실패: {}", e.getMessage());
+            log.error("요청 수 수집 실패: {}", e.getMessage());
         }
         
         return 0L;
@@ -213,7 +248,7 @@ public class ActuatorMetricsController {
             OperatingSystemMXBean osBean = ManagementFactory.getOperatingSystemMXBean();
             return osBean.getSystemLoadAverage();
         } catch (Exception e) {
-            log.debug("시스템 부하 수집 실패: {}", e.getMessage());
+            log.error("시스템 부하 수집 실패: {}", e.getMessage());
             return -1.0;
         }
     }
@@ -334,22 +369,10 @@ public class ActuatorMetricsController {
                          responseTime < 5000.0 && 
                          threads < 500;
         
-        log.debug("건강성 체크 - CPU: {:.1f}%, Memory: {:.1f}%, ResponseTime: {:.1f}ms, Threads: {}, Healthy: {}", 
+        log.info("건강성 체크 - CPU: {:.1f}%, Memory: {:.1f}%, ResponseTime: {:.1f}ms, Threads: {}, Healthy: {}", 
                 cpu, memory, responseTime, threads, healthy);
         
         return healthy;
-    }
-    
-    private String getInstanceId() {
-        try {
-            String port = System.getProperty("server.port", 
-                         System.getenv().getOrDefault("SERVICE_PORT", "20190"));
-            String hostname = InetAddress.getLocalHost().getHostName();
-            return "service-batch-" + port + "-" + hostname.substring(0, Math.min(hostname.length(), 8));
-        } catch (Exception e) {
-            String port = System.getProperty("server.port", "20190");
-            return "service-batch-" + port + "-" + System.currentTimeMillis() % 10000;
-        }
     }
     
     /**
@@ -384,6 +407,10 @@ public class ActuatorMetricsController {
             // MeterRegistry 정보
             info.put("meterRegistryType", meterRegistry.getClass().getSimpleName());
             info.put("availableMeters", meterRegistry.getMeters().size());
+            
+            // 환경 정보 (PID는 디버깅용으로만)
+            info.put("hostname", getHostname());
+            info.put("processId", ProcessHandle.current().pid());
             
         } catch (Exception e) {
             log.error("시스템 정보 수집 실패: {}", e.getMessage(), e);
