@@ -70,7 +70,7 @@ public class ActuatorMetricsController {
             metrics.put("loadScore", loadScore);
             metrics.put("isHealthy", isHealthy(metrics));
             
-            log.info("메트릭 수집 완료: {}, 부하점수: {:.2f}", instanceId, loadScore);
+            log.info("메트릭 수집 완료: {}, 부하점수: " + String.format("%.2f", loadScore), instanceId);
             
         } catch (Exception e) {
             log.error("메트릭 수집 실패: {}", e.getMessage(), e);
