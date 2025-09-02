@@ -6,6 +6,16 @@ spring:
     activate:
       on-profile: local
 
+eureka:
+  client:
+    service-url:
+      defaultZone: http://localhost:28761/eureka/  # 유레카 서버 주소
+    fetch-registry: true
+    register-with-eureka: true
+  instance:
+    prefer-ip-address: true
+
+
 database:
   datasource:
     pub:
