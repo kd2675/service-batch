@@ -44,15 +44,7 @@ RUN wget -q https://chromedriver.storage.googleapis.com/${CHROME_DRIVER_VERSION}
     && chmod +x /usr/local/bin/chromedriver \
     && rm -f chromedriver_linux64.zip
 
-# 🔥 애플리케이션 JAR 복사
 COPY --from=builder /build/service-batch/build/libs/*.jar ./app.jar
+ENV	USE_PROFILE dev
 
-# 🔥 환경 변수 설정
-ENV USE_PROFILE=dev
-ENV JAVA_OPTS="-Xms512m -Xmx1g -XX:+UseG1GC -XX:+UseContainerSupport"
-
-# 🏥 헬스체크 (배치 서비스용 - 선택사항)
-# HEALTHCHECK --interval=60s --timeout=10s --start-period=30s --retries=3 \
-#   CMD curl -f http://localhost:8080/actuator/health || exit 1
-
-ENTRYPOINT ["sh", "-c", "java $JAVA_OPTS -Dspring.profiles.active=${USE_PROFILE} -jar /app/app.jar"]
+ENTRYPOINT ["java", "-Dspring.profiles.active=${USE_PROFILE}", "-jar", "/app/app.jar"]
