@@ -1,41 +1,58 @@
 FROM gradle:8.7-jdk17 as builder
 WORKDIR /build
-# 그래들 파일이 변경되었을 때만 새롭게 의존패키지 다운로드 받게함.
-COPY build.gradle /build/
-RUN gradle build -x test --parallel --continue > /dev/null 2>&1 || true
-# 빌더 이미지에서 애플리케이션 빌드
-COPY . /build
-RUN gradle build -x test --parallel
+
+# 🔥 더 세밀한 의존성 캐싱 (서브프로젝트별)
+COPY build.gradle settings.gradle /build/
+COPY common-core/build.gradle /build/common-core/
+COPY common-database/build.gradle /build/common-database/
+COPY common-log/build.gradle /build/common-log/
+COPY service-batch/build.gradle /build/service-batch/
+RUN gradle :service-batch:dependencies --no-daemon
+
+# 🎯 필요한 소스만 복사 (전체 대신)
+COPY common-core/ /build/common-core/
+COPY common-database/ /build/common-database/
+COPY common-log/ /build/common-log/
+COPY service-batch/ /build/service-batch/
+
+# 빌드 (기존과 동일)
+RUN gradle :service-batch:clean :service-batch:build --no-daemon --parallel
+
 FROM openjdk:17-slim
 WORKDIR /app
 
-#RUN apt -y install curl
+# 🔧 시스템 패키지 업데이트 및 필수 도구 설치
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    curl \
+    wget \
+    unzip \
+    && rm -rf /var/lib/apt/lists/*
 
-RUN apt-get update
+# 🌐 Chrome 및 ChromeDriver 설정
+ENV CHROME_VERSION=114.0.5735.90-1
+ENV CHROME_DRIVER_VERSION=114.0.5735.90
 
-RUN apt-get install -y curl
+# 🔥 Chrome 설치 (최적화)
+RUN wget -q https://mirror.cs.uchicago.edu/google-chrome/pool/main/g/google-chrome-stable/google-chrome-stable_${CHROME_VERSION}_amd64.deb \
+    && apt-get install -y ./google-chrome-stable_${CHROME_VERSION}_amd64.deb \
+    && rm -f google-chrome-stable_${CHROME_VERSION}_amd64.deb
 
-RUN apt-get install -y wget
+# 🔥 ChromeDriver 설치 (최적화)
+RUN wget -q https://chromedriver.storage.googleapis.com/${CHROME_DRIVER_VERSION}/chromedriver_linux64.zip \
+    && unzip -q chromedriver_linux64.zip \
+    && mv chromedriver /usr/local/bin/ \
+    && chmod +x /usr/local/bin/chromedriver \
+    && rm -f chromedriver_linux64.zip
 
-RUN apt-get install -y unzip
-
-ENV	CHROME_VERSION 114.0.5735.90-1
-ENV	CHROME_DRIVER_VERSION 114.0.5735.90
-
-#RUN wget https://dl.google.com/linux/direct/google-chrome-stable_current_amd64.deb
-
-#RUN apt-get -y install ./google-chrome-stable_current_amd64.deb
-
-RUN wget https://mirror.cs.uchicago.edu/google-chrome/pool/main/g/google-chrome-stable/google-chrome-stable_${CHROME_VERSION}_amd64.deb
-RUN apt-get install -y ./google-chrome-stable_${CHROME_VERSION}_amd64.deb
-
-RUN wget https://chromedriver.storage.googleapis.com/${CHROME_DRIVER_VERSION}/chromedriver_linux64.zip
-RUN unzip chromedriver_linux64.zip
-
-#RUN wget -O /tmp/chromedriver.zip https://chromedriver.storage.googleapis.com/` curl -sS chromedriver.storage.googleapis.com/${CHROME_DRIVER_VERSION}`/chromedriver_linux64.zip
-#RUN unzip /tmp/chromedriver.zip chromedriver -d /usr/bin
-
+# 🔥 애플리케이션 JAR 복사
 COPY --from=builder /build/service-batch/build/libs/*.jar ./app.jar
-ENV	USE_PROFILE dev
 
-ENTRYPOINT ["java", "-Dspring.profiles.active=${USE_PROFILE}", "-jar", "/app/app.jar"]
+# 🔥 환경 변수 설정
+ENV USE_PROFILE=dev
+ENV JAVA_OPTS="-Xms512m -Xmx1g -XX:+UseG1GC -XX:+UseContainerSupport"
+
+# 🏥 헬스체크 (배치 서비스용 - 선택사항)
+# HEALTHCHECK --interval=60s --timeout=10s --start-period=30s --retries=3 \
+#   CMD curl -f http://localhost:8080/actuator/health || exit 1
+
+ENTRYPOINT ["sh", "-c", "java $JAVA_OPTS -Dspring.profiles.active=${USE_PROFILE} -jar /app/app.jar"]

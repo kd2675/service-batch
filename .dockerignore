@@ -1,0 +1,6 @@
+*/build/
+*/logs/
+.env
+*/.idea/
+*.iml
+*.log
