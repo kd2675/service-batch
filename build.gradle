@@ -52,6 +52,7 @@ dependencies {
     testAnnotationProcessor 'org.projectlombok:lombok'
 
     implementation 'org.apache.commons:commons-lang3:3.4'
+    testImplementation 'com.h2database:h2'
 }
 
 dependencyManagement {

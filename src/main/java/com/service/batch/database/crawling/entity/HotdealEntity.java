@@ -49,7 +49,7 @@ public class HotdealEntity extends CommonDateEntity {
     @Column(name = "site", nullable = false, length = 255)
     private String site;
 
-    @ColumnDefault("n")
+    @ColumnDefault("'n'")
     @Column(name = "send_yn", nullable = false, length = 1)
     private String sendYn;
 
