@@ -5,6 +5,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
 import org.springframework.lang.NonNull;
 import org.springframework.stereotype.Repository;
 
@@ -27,5 +28,11 @@ public interface NewsREP extends JpaRepository<NewsEntity, Long> {
     );
 
     Page<NewsEntity> findAll(Specification<NewsEntity> spec, Pageable pageable);
+
+    @Query(value = "SELECT * FROM news " +
+            "WHERE MATCH(title, content) AGAINST (?1 IN NATURAL LANGUAGE MODE) " +
+            "ORDER BY id DESC",
+            nativeQuery = true)
+    List<NewsEntity> searchFullText(String keyword);
 
 }
