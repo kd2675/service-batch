@@ -89,7 +89,7 @@ public class HotdealStep {
 
     @Bean(name = DEL_HOTDEAL_STEP)
     @JobScope
-    public Step saveOldNewsAndDelAllNewsStep(
+    public Step delHotdealStep(
             JobRepository jobRepository,
             @Qualifier("crawlingTransactionManager") PlatformTransactionManager platformTransactionManager,
             @Qualifier(HotdealReader.FIND_ALL_HOTDEAL_FIX_PAGE_0) JpaPagingItemReader<HotdealEntity> itemReader,

@@ -13,8 +13,8 @@ import org.springframework.context.annotation.Configuration;
 public class HotdealJob {
     public static final String INS_HOTDEAL_JOB = "insHotdealJob";
     public static final String SEND_HOTDEAL_JOB = "sendHotdealJob";
-    public static final String DEL_SENT_HOTDEAL_JOB = "delSentHotdealHob";
-    public static final String DEL_HOTDEAL_JOB = "delHotdealHob";
+    public static final String DEL_SENT_HOTDEAL_JOB = "delSentHotdealJob";
+    public static final String DEL_HOTDEAL_JOB = "delHotdealJob";
 
     @Bean(name = INS_HOTDEAL_JOB)
     public Job insNewsJob(
