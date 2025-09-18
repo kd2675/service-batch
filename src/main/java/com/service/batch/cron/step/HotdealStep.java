@@ -71,7 +71,7 @@ public class HotdealStep {
 
     @Bean(name = DEL_SENT_HOTDEAL_STEP)
     @JobScope
-    public Step delHotdealStep(
+    public Step delSentHotdealStep(
             JobRepository jobRepository,
             @Qualifier("crawlingTransactionManager") PlatformTransactionManager platformTransactionManager,
             @Qualifier(MattermostReader.FIND_BY_CATEGORY_IS_HOTDEAL) JpaPagingItemReader<MattermostSentEntity> itemReader,
