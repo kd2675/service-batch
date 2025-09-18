@@ -15,7 +15,6 @@ spring:
     activate:
       on-profile: local
 
-
 database:
   datasource:
     pub:
