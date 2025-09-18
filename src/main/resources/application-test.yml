@@ -1,16 +1,6 @@
 server:
   port: 30180
 
-
-eureka:
-  client:
-    service-url:
-      defaultZone: http://localhost:30210/eureka/  # 유레카 서버 주소
-    fetch-registry: true
-    register-with-eureka: true
-  instance:
-    prefer-ip-address: true
-
 spring:
   config:
     activate:
