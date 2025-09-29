@@ -249,6 +249,13 @@ public class HotdealSVCImpl implements HotdealSVC {
                 }
                 HotdealEntity remove = q.remove();
 
+                String date;
+                if (remove == null || remove.getCreateDate() == null) {
+                    date = "";
+                } else {
+                    date = remove.getCreateDate().format(dtf);
+                }
+
                 content.append("| ")
                         .append(remove.getImgUrl100X100())
                         .append(" | ")
@@ -265,7 +272,7 @@ public class HotdealSVCImpl implements HotdealSVC {
                         .append(")")
                         .append(" | ")
 
-                        .append(remove.getCreateDate().format(dtf))
+                        .append(date)
                         .append(" | ")
 
                         .append(remove.getPriceStr());
