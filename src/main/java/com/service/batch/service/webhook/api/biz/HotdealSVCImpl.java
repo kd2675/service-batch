@@ -239,7 +239,6 @@ public class HotdealSVCImpl implements HotdealSVC {
         result.append(header)
                 .append(line);
 
-
         Queue<HotdealEntity> q = new LinkedList<>(entityList);
         while (!q.isEmpty()) {
             StringBuilder content = new StringBuilder();
