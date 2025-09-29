@@ -4,6 +4,7 @@ import com.service.batch.cron.common.CustomJobParametersIncrementer;
 import com.service.batch.service.coin.api.biz.ins.InsCoinService;
 import com.service.batch.service.lotto.biz.LottoService;
 import com.service.batch.service.reset.api.biz.Reset;
+import com.service.batch.service.sport.biz.ReserveSportSVC;
 import com.service.batch.service.stock.biz.StockService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -32,6 +33,7 @@ public class BatchApiServiceImpl implements BatchApiService{
     private final Reset reset;
     private final InsCoinService insCoinService;
     private final StockService stockService;
+    private final ReserveSportSVC reserveSportSVC;
 
     @Override
     @Async("asyncTaskExecutor")
@@ -71,6 +73,12 @@ public class BatchApiServiceImpl implements BatchApiService{
             case "reset" -> reset.mattermostDelReset();
             case "saveCoinDataBTC" -> insCoinService.saveCoinDataBTC();
             case "logCacheStats" -> stockService.logCacheStats();
+            case "beforeCheckJangsung" -> reserveSportSVC.beforeCheckJangsung(
+                    request.getParameters().get("year").toString(),
+                    request.getParameters().get("month").toString(),
+                    request.getParameters().get("day").toString(),
+                    request.getParameters().get("st").toString()
+            );
         }
     }
 

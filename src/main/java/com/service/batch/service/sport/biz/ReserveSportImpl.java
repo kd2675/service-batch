@@ -48,7 +48,7 @@ public class ReserveSportImpl implements ReserveSportSVC {
     }
 
     @Override
-    public void test1(String year, String month, String day, String st) {
+    public void beforeCheckJangsung(String year, String month, String day, String st) {
         ChromeRec chromeRec = chromeRec();
 
         try {
