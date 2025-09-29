@@ -14,7 +14,7 @@ import java.util.HashMap;
 @Slf4j
 @RequiredArgsConstructor
 @RestController
-@RequestMapping("/webhook")
+@RequestMapping("/service/batch/webhook")
 public class WebhookCTR {
     private final WebhookSVC webhookSVC;
     private final WebhookCMD webhookCMD;
