@@ -23,7 +23,7 @@ public class BatchApiController {
         try {
             batchApiService.executeAsync(request);
 
-            return ResponseDTO.of(true, Code.OK);
+            return ResponseDTO.of(true, Code.OK_ASYNC);
         } catch (Exception e) {
             log.error("BatchApiController execute error", e);
         }
@@ -36,7 +36,7 @@ public class BatchApiController {
         try {
             batchApiService.execute(request);
 
-            return ResponseDTO.of(true, Code.OK);
+            return ResponseDTO.of(true, Code.OK_ASYNC);
         } catch (Exception e) {
             log.error("BatchApiController execute error", e);
         }
@@ -49,7 +49,7 @@ public class BatchApiController {
         try {
             batchApiService.serviceAsync(request);
 
-            return ResponseDTO.of(true, Code.OK);
+            return ResponseDTO.of(true, Code.OK_ASYNC);
         } catch (Exception e) {
             log.error("BatchApiController execute error", e);
         }
@@ -62,7 +62,7 @@ public class BatchApiController {
         try {
             batchApiService.service(request);
 
-            return ResponseDTO.of(true, Code.OK);
+            return ResponseDTO.of(true, Code.OK_ASYNC);
         } catch (Exception e) {
             log.error("BatchApiController execute error", e);
         }
