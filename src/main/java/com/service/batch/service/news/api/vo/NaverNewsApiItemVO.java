@@ -44,6 +44,7 @@ public class NaverNewsApiItemVO implements Comparable<NaverNewsApiItemVO> {
         ) {
             return 1;
         }
+
         return 0;
     }
 }
