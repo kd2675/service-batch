@@ -1,4 +1,4 @@
-package com.service.batch.service.lotto.api.biz;
+package com.service.batch.service.lotto.biz;
 
 import com.service.batch.utils.MattermostUtil;
 import lombok.RequiredArgsConstructor;

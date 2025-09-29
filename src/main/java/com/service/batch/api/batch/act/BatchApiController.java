@@ -18,10 +18,36 @@ import org.springframework.web.bind.annotation.RestController;
 public class BatchApiController {
     private final BatchApiService batchApiService;
 
+    @RequestMapping("/gateway/executeAsync")
+    public ResponseDTO executeAsync(@RequestBody BatchExecuteRequest request) {
+        try {
+            batchApiService.executeAsync(request);
+
+            return ResponseDTO.of(true, Code.OK);
+        } catch (Exception e) {
+            log.error("BatchApiController execute error", e);
+        }
+
+        return ResponseDTO.of(false, Code.BAD_REQUEST);
+    }
+
     @RequestMapping("/gateway/execute")
     public ResponseDTO execute(@RequestBody BatchExecuteRequest request) {
         try {
             batchApiService.execute(request);
+
+            return ResponseDTO.of(true, Code.OK);
+        } catch (Exception e) {
+            log.error("BatchApiController execute error", e);
+        }
+
+        return ResponseDTO.of(false, Code.BAD_REQUEST);
+    }
+
+    @RequestMapping("/gateway/serviceAsync")
+    public ResponseDTO serviceAsync(@RequestBody BatchServiceRequest request) {
+        try {
+            batchApiService.serviceAsync(request);
 
             return ResponseDTO.of(true, Code.OK);
         } catch (Exception e) {

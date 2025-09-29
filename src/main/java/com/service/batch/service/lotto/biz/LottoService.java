@@ -1,4 +1,4 @@
-package com.service.batch.service.lotto.api.biz;
+package com.service.batch.service.lotto.biz;
 
 public interface LottoService {
     void account();
