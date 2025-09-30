@@ -255,7 +255,6 @@ public class HotdealSVCImpl implements HotdealSVC {
                     date = remove.getCreateDate().format(dtf);
                 }
 
-
                 content.append("| ")
                         .append(remove.getImgUrl100X100())
                         .append(" | ")
