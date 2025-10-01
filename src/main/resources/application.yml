@@ -8,6 +8,7 @@ spring:
       test: test
       dev: dev
       prod: prod
+      prod-backup: prod-backup
   devtools:
     livereload:
       enabled: false
