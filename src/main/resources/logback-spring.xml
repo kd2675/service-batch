@@ -18,6 +18,9 @@
     <springProfile name="prod">
         <property resource="logback-prod.properties"/>
     </springProfile>
+    <springProfile name="prod-backup">
+        <property resource="logback-prod-backup.properties"/>
+    </springProfile>
     <!--Environment 내의 프로퍼티들을 개별적으로 설정할 수도 있다.-->
 
     <property name="LOG_PATH" value="${log.config.path}"/>
@@ -187,6 +190,29 @@
     </springProfile>
 
     <springProfile name="prod">
+        <root level="INFO">
+            <appender-ref ref="CONSOLE"/>
+            <appender-ref ref="APP_WARN_APPENDER"/>
+            <appender-ref ref="APP_ERROR_APPENDER"/>
+        </root>
+
+        <logger name="org.hibernate.SQL" level="DEBUG" additivity="false">
+            <appender-ref ref="SQL_TRACE_APPENDER"/>
+            <appender-ref ref="SQL_ERROR_APPENDER"/>
+        </logger>
+
+        <logger name="org.hibernate.orm.jdbc.bind" level="TRACE" additivity="false">
+            <appender-ref ref="SQL_TRACE_APPENDER"/>
+            <appender-ref ref="SQL_ERROR_APPENDER"/>
+        </logger>
+
+        <logger name="org.hibernate.type" level="INFO" additivity="false">
+            <appender-ref ref="SQL_TRACE_APPENDER"/>
+            <appender-ref ref="SQL_ERROR_APPENDER"/>
+        </logger>
+    </springProfile>
+
+    <springProfile name="prod-backup">
         <root level="INFO">
             <appender-ref ref="CONSOLE"/>
             <appender-ref ref="APP_WARN_APPENDER"/>
