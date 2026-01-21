@@ -43,16 +43,16 @@ public class StockService {
     private static final String YAHOO_SEARCH_URL = "https://query2.finance.yahoo.com/v1/finance/search";
 
     // 캐시 관련 필드 추가
+    private final Map<String, List<StockSearchDTO>> searchCache = new ConcurrentHashMap<>();
+    private final Map<String, LocalDateTime> searchCacheTimestamps = new ConcurrentHashMap<>();
     private final Map<String, StockPriceDTO> priceCache = new ConcurrentHashMap<>();
     private final Map<String, LocalDateTime> priceCacheTimestamps = new ConcurrentHashMap<>();
     private final Map<String, List<StockHistoryDTO>> historyCache = new ConcurrentHashMap<>();
     private final Map<String, LocalDateTime> historyCacheTimestamps = new ConcurrentHashMap<>();
-    private final Map<String, List<StockSearchDTO>> searchCache = new ConcurrentHashMap<>();
-    private final Map<String, LocalDateTime> searchCacheTimestamps = new ConcurrentHashMap<>();
 
+    private static final Duration SEARCH_CACHE_DURATION = Duration.ofMinutes(30); // 검색 결과는 30분 캐시
     private static final Duration PRICE_CACHE_DURATION = Duration.ofMinutes(5);
     private static final Duration HISTORY_CACHE_DURATION = Duration.ofHours(1);
-    private static final Duration SEARCH_CACHE_DURATION = Duration.ofMinutes(30); // 검색 결과는 30분 캐시
 
 
     // 캐시 정리 메소드 업데이트
@@ -100,9 +100,9 @@ public class StockService {
     // 캐시 통계 조회 메소드 (디버깅용)
     public void logCacheStats() {
         log.info("=== Cache Statistics ===");
+        log.info("Search Cache: {} entries", searchCache.size());
         log.info("Price Cache: {} entries", priceCache.size());
         log.info("History Cache: {} entries", historyCache.size());
-        log.info("Search Cache: {} entries", searchCache.size());
     }
 
     // 나머지 메소드들...

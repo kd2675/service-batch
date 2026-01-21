@@ -109,7 +109,7 @@ public class LottoServiceImpl implements LottoService {
 
     private void login(WebDriver driver, WebDriverWait wait) {
         driver.get("https://www.dhlottery.co.kr");
-        driver.navigate().to("https://dhlottery.co.kr/user.do?method=login");
+        driver.navigate().to("https://www.dhlottery.co.kr/login");
 
         WebElement idElement = driver.findElement(By.cssSelector("input[placeholder='아이디']"));
         idElement.sendKeys("kd2675");

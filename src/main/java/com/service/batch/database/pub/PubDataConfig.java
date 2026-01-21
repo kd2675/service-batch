@@ -22,7 +22,7 @@ import java.util.Map;
 @Configuration
 @EnableTransactionManagement
 @EnableJpaRepositories(
-        basePackages = {"org.example.database.database.auth.repository", "com.service.batch.database.pub.repository"},
+        basePackages = {"com.service.batch.database.pub.repository"},
         entityManagerFactoryRef = "pubEntityManagerFactory",
         transactionManagerRef = "pubTransactionManager"
 )
