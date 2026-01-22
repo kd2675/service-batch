@@ -9,6 +9,7 @@ import com.service.batch.database.crawling.repository.NewsSubscribeEntityREP;
 import com.service.batch.database.crawling.repository.OldNewsREP;
 import com.service.batch.database.crawling.specification.NewsSpec;
 import com.service.batch.database.crawling.specification.OldNewsSpec;
+import com.service.batch.service.lotto.biz.LottoService;
 import com.service.batch.service.webhook.api.dto.WebhookDTO;
 import com.service.batch.service.webhook.api.vo.WebhookEnum;
 import com.service.batch.utils.BugsApiUtil;
@@ -42,6 +43,7 @@ public class WebhookSVCImpl implements WebhookCMD, WebhookSVC {
     private final NewsREP newsREP;
     private final OldNewsREP oldNewsREP;
     private final NewsSubscribeEntityREP newsSubscribeEntityREP;
+    private final LottoService lottoService;
 
     @Override
     public void notRun(WebhookDTO webhookDTO){
@@ -78,6 +80,7 @@ public class WebhookSVCImpl implements WebhookCMD, WebhookSVC {
         commandMap.put(WebhookEnum.COMMAND_602.getKey(), () -> hotdealSVC.hotdealAlimIns(webhookDTO));
         commandMap.put(WebhookEnum.COMMAND_603.getKey(), () -> hotdealSVC.hotdealAlimDel(webhookDTO));
         commandMap.put(WebhookEnum.COMMAND_604.getKey(), () -> hotdealSVC.hotdealAlimList(webhookDTO));
+        commandMap.put(WebhookEnum.COMMAND_800.getKey(), () -> lottoService.checkBob(webhookDTO));
 
         for (WebhookEnum webhookEnum : WebhookEnum.values()) {
             commandMap.put(webhookEnum.getShortKey(), commandMap.get(webhookEnum.getKey()));
