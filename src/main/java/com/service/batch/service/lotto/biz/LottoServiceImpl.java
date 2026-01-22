@@ -887,7 +887,7 @@ public class LottoServiceImpl implements LottoService {
                 // 메신저 전송용 텍스트 구성
                 String message = String.format("[%s] 당첨번호: %s + 보너스: %s",
                         round, String.join(", ", mainNumbers), bonus);
-                mattermostUtil.send(message, "5zqu88zsef83x8kj86igsqe1wa");
+//                mattermostUtil.send(message, "5zqu88zsef83x8kj86igsqe1wa");
 
                 return result;
             } else {
