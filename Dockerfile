@@ -18,7 +18,7 @@ COPY service-batch/ /build/service-batch/
 # 빌드 (기존과 동일)
 RUN gradle :service-batch:clean :service-batch:build --no-daemon --parallel
 
-FROM openjdk:17-jdk-slim
+FROM eclipse-temurin:17-jdk-jammy
 WORKDIR /app
 
 #RUN apt -y install curl
