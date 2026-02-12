@@ -6,8 +6,8 @@ import lombok.Getter;
 @Getter
 @AllArgsConstructor
 public enum WebhookEnum {
-    COMMAND_100(100L, "$time", "$t", "퇴근까지 남은 시간 알려드립니다."),
-    COMMAND_101(101L, "$uptime", "$ut", "출근 후 지난 시간 알려드립니다."),
+    COMMAND_100(100L, "$t", "$ㅅ", "퇴근까지 남은 시간 알려드립니다."),
+    COMMAND_101(101L, "$ut", "$ㅕㅅ", "출근 후 지난 시간 알려드립니다."),
 
     COMMAND_200(200L, "$news", "$n", "뉴스 찾아드립니다. ex)$news 밥,세일,탕수육(and조건) 0(pageNo) 10(pagePerCnt<=10)"),
     COMMAND_201(201L, "$oldNews", "$on", "지난 뉴스 찾아드립니다. ex)$oldNews 밥,세일,탕수육(and조건) 0(pageNo) 10(pagePerCnt<=10)"),
