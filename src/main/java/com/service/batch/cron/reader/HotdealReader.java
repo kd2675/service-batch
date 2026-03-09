@@ -142,7 +142,8 @@ public class HotdealReader {
                 .toUri();
 
         try {
-            String response = restTemplate.getForObject(uri, String.class);
+            byte[] responseBytes = restTemplate.getForObject(uri, byte[].class);
+            String response = this.decodeUtf8(responseBytes);
             if (StringUtils.isBlank(response)) {
                 return HotdealPage.empty();
             }
@@ -185,7 +186,8 @@ public class HotdealReader {
             }
 
             URI uri = uriBuilder.encode().build().toUri();
-            String response = restTemplate.getForObject(uri, String.class);
+            byte[] responseBytes = restTemplate.getForObject(uri, byte[].class);
+            String response = this.decodeUtf8(responseBytes);
             if (StringUtils.isBlank(response)) {
                 return HotdealPage.empty();
             }
@@ -517,6 +519,13 @@ public class HotdealReader {
         }
     }
 
+    private String decodeUtf8(byte[] responseBytes) {
+        if (responseBytes == null || responseBytes.length == 0) {
+            return "";
+        }
+        return new String(responseBytes, StandardCharsets.UTF_8);
+    }
+
     private record SignatureToken(String h, String t) {
         private static SignatureToken empty() {
             return new SignatureToken("", "");
@@ -577,8 +586,8 @@ public class HotdealReader {
         DateTimeFormatter dtf = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
         String regexEmojis = "[\uD83C-\uDBFF\uDC00-\uDFFF]+";
 
-        String header = "| 키워드 | img | 제목 | 가격 |\n";
-        String line = "| :--:|:--:|:-----:|:--: |\n";
+        String header = "| 키워드 | img | 제목 | 가격 | 날짜 |\n";
+        String line = "| :--:|:--:|:-----:|:--:|:----: |\n";
 //        String header = "| 시각 | 제목 | 시각 | 제목 |\n";
 //        String line = "| :-:|:--:|:-:|:--: |\n";
         result.append(header)
@@ -593,6 +602,8 @@ public class HotdealReader {
                     break;
                 }
                 HotdealDTO remove = q.remove();
+                String date = this.formatOriginalCreatedAt(remove.getCreatedAt(), dtf);
+                String priceStr = StringUtils.defaultIfBlank(remove.getPriceStr(), "0");
 
                 content.append("| ")
                         .append(keyword)
@@ -613,12 +624,27 @@ public class HotdealReader {
                         .append(")")
                         .append(" | ")
 
-                        .append(remove.getPriceStr());
+                        .append(priceStr)
+                        .append(" | ")
+
+                        .append(date);
             }
             content.append(" |\n");
             result.append(content);
         }
 
         return result.toString();
+    }
+
+    private String formatOriginalCreatedAt(String createdAt, DateTimeFormatter dtf) {
+        if (StringUtils.isBlank(createdAt)) {
+            return "";
+        }
+
+        try {
+            return LocalDateTime.parse(createdAt).format(dtf);
+        } catch (Exception e) {
+            return createdAt;
+        }
     }
 }

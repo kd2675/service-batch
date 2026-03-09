@@ -52,8 +52,8 @@ class HotdealReaderTest {
     void findHotdeal_WithNoExistingData_ShouldFetchFirstPageData() throws Exception {
         // Given - 기존 데이터 없음
         when(hotdealEntityREP.findTop1ByOrderByProductIdDesc()).thenReturn(Arrays.asList());
-        when(restTemplate.getForObject(any(), eq(String.class)))
-            .thenReturn(createMockInitialHtmlWithProducts("300", false, "100", "200", "300"));
+        when(restTemplate.getForObject(any(), eq(byte[].class)))
+            .thenReturn(toUtf8Bytes(createMockInitialHtmlWithProducts("300", false, "100", "200", "300")));
         when(hotdealAlimEntityREP.findBySendYn("n")).thenReturn(Arrays.asList());
 
         // When
@@ -82,7 +82,7 @@ class HotdealReaderTest {
         assertThat(firstItem.getNowClickCount()).isEqualTo(1);
         
         // RestTemplate이 첫 페이지만 호출되었는지 확인
-        verify(restTemplate, times(1)).getForObject(any(), eq(String.class));
+        verify(restTemplate, times(1)).getForObject(any(), eq(byte[].class));
     }
 
     @Test
@@ -97,11 +97,11 @@ class HotdealReaderTest {
         // 두 번째 페이지: productId 300, 400 (모두 새로운 데이터)  
         // 세 번째 페이지: productId 140, 160 (140은 기존보다 작음, 160은 새로운 데이터) -> limit2=true이므로 계속
         // 네 번째 페이지: productId 130, 140 (모두 기존보다 작음) -> limit2=false이므로 중단
-        when(restTemplate.getForObject(any(), eq(String.class)))
-            .thenReturn(createMockInitialHtmlWithProducts("200", true, "100", "200"))          // 페이지 0 (HTML)
-            .thenReturn(createMockListV2JsonWithProducts("400", true, "300", "400"))           // 페이지 1 (JSON)
-            .thenReturn(createMockListV2JsonWithProducts("160", true, "140", "160"))           // 페이지 2 (JSON)
-            .thenReturn(createMockListV2JsonWithProducts("140", true, "130", "140"));          // 페이지 3 (JSON)
+        when(restTemplate.getForObject(any(), eq(byte[].class)))
+            .thenReturn(toUtf8Bytes(createMockInitialHtmlWithProducts("200", true, "100", "200")))          // 페이지 0 (HTML)
+            .thenReturn(toUtf8Bytes(createMockListV2JsonWithProducts("400", true, "300", "400")))           // 페이지 1 (JSON)
+            .thenReturn(toUtf8Bytes(createMockListV2JsonWithProducts("160", true, "140", "160")))           // 페이지 2 (JSON)
+            .thenReturn(toUtf8Bytes(createMockListV2JsonWithProducts("140", true, "130", "140")));          // 페이지 3 (JSON)
         
         when(hotdealAlimEntityREP.findBySendYn("n")).thenReturn(Arrays.asList());
 
@@ -130,7 +130,7 @@ class HotdealReaderTest {
         assertThat(item5).isNull(); // 네 번째 페이지는 새 데이터가 없어서(limit2=false) 중단
         
         // RestTemplate이 4번 호출되었는지 확인 (4페이지까지 가져온 후 중단)
-        verify(restTemplate, times(4)).getForObject(any(), eq(String.class));
+        verify(restTemplate, times(4)).getForObject(any(), eq(byte[].class));
     }
 
     @Test
@@ -144,10 +144,10 @@ class HotdealReaderTest {
         // 첫 번째 페이지: productId 100, 200 (200은 새로운 데이터)
         // 두 번째 페이지: productId 300, 400 (모두 새로운 데이터)
         // 세 번째 페이지: productId 120, 140 (모두 기존보다 작음) -> limit2=false로 중단
-        when(restTemplate.getForObject(any(), eq(String.class)))
-            .thenReturn(createMockInitialHtmlWithProducts("200", true, "100", "200"))          // 페이지 0 (HTML)
-            .thenReturn(createMockListV2JsonWithProducts("400", true, "300", "400"))           // 페이지 1 (JSON)
-            .thenReturn(createMockListV2JsonWithProducts("140", true, "120", "140"));          // 페이지 2 (JSON) - 새 데이터 없음
+        when(restTemplate.getForObject(any(), eq(byte[].class)))
+            .thenReturn(toUtf8Bytes(createMockInitialHtmlWithProducts("200", true, "100", "200")))          // 페이지 0 (HTML)
+            .thenReturn(toUtf8Bytes(createMockListV2JsonWithProducts("400", true, "300", "400")))           // 페이지 1 (JSON)
+            .thenReturn(toUtf8Bytes(createMockListV2JsonWithProducts("140", true, "120", "140")));          // 페이지 2 (JSON) - 새 데이터 없음
         
         when(hotdealAlimEntityREP.findBySendYn("n")).thenReturn(Arrays.asList());
 
@@ -172,7 +172,7 @@ class HotdealReaderTest {
         assertThat(item4).isNull(); // 세 번째 페이지에서 새 데이터 없어서 중단
         
         // RestTemplate이 3번 호출되었는지 확인 (3페이지에서 중단)
-        verify(restTemplate, times(3)).getForObject(any(), eq(String.class));
+        verify(restTemplate, times(3)).getForObject(any(), eq(byte[].class));
     }
 
     @Test
@@ -184,8 +184,8 @@ class HotdealReaderTest {
             .thenReturn(Arrays.asList(existingEntity));
         
         // 첫 번째 페이지에 기존 productId 200이 포함됨 (limit1 = true가 되어 중단)
-        when(restTemplate.getForObject(any(), eq(String.class)))
-            .thenReturn(createMockInitialHtmlWithProducts("400", true, "200", "300", "400"));
+        when(restTemplate.getForObject(any(), eq(byte[].class)))
+            .thenReturn(toUtf8Bytes(createMockInitialHtmlWithProducts("400", true, "200", "300", "400")));
         
         when(hotdealAlimEntityREP.findBySendYn("n")).thenReturn(Arrays.asList());
 
@@ -206,7 +206,7 @@ class HotdealReaderTest {
         assertThat(item3).isNull(); // 더 이상 데이터 없음
         
         // limit1=true로 인해 첫 번째 페이지만 호출되고 중단
-        verify(restTemplate, times(1)).getForObject(any(), eq(String.class));
+        verify(restTemplate, times(1)).getForObject(any(), eq(byte[].class));
     }
 
     @Test
@@ -219,9 +219,9 @@ class HotdealReaderTest {
         
         // 첫 번째 페이지: 600, 700 (모두 새로운 데이터)
         // 두 번째 페이지: 300, 400 (모두 기존 데이터보다 작음 - limit2=false가 되어 중단)
-        when(restTemplate.getForObject(any(), eq(String.class)))
-            .thenReturn(createMockInitialHtmlWithProducts("700", true, "600", "700"))          // 페이지 0 (HTML)
-            .thenReturn(createMockListV2JsonWithProducts("400", true, "300", "400"));          // 페이지 1 (JSON)
+        when(restTemplate.getForObject(any(), eq(byte[].class)))
+            .thenReturn(toUtf8Bytes(createMockInitialHtmlWithProducts("700", true, "600", "700")))          // 페이지 0 (HTML)
+            .thenReturn(toUtf8Bytes(createMockListV2JsonWithProducts("400", true, "300", "400")));          // 페이지 1 (JSON)
         
         when(hotdealAlimEntityREP.findBySendYn("n")).thenReturn(Arrays.asList());
 
@@ -242,7 +242,7 @@ class HotdealReaderTest {
         assertThat(item3).isNull(); // 더 이상 데이터 없음
         
         // limit2=false로 인해 두 번째 페이지에서 중단
-        verify(restTemplate, times(2)).getForObject(any(), eq(String.class));
+        verify(restTemplate, times(2)).getForObject(any(), eq(byte[].class));
     }
 
     @Test
@@ -254,13 +254,13 @@ class HotdealReaderTest {
             .thenReturn(Arrays.asList(existingEntity));
             
         // 각 페이지마다 기존 데이터보다 큰 productId만 반환 (5페이지 모두 새로운 데이터)
-        when(restTemplate.getForObject(any(), eq(String.class)))
-            .thenReturn(createMockInitialHtmlWithProducts("300", true, "200", "300"))          // 페이지 0 (HTML)
-            .thenReturn(createMockListV2JsonWithProducts("500", true, "400", "500"))           // 페이지 1 (JSON)
-            .thenReturn(createMockListV2JsonWithProducts("700", true, "600", "700"))           // 페이지 2 (JSON)
-            .thenReturn(createMockListV2JsonWithProducts("900", true, "800", "900"))           // 페이지 3 (JSON)
-            .thenReturn(createMockListV2JsonWithProducts("1100", true, "1000", "1100"))        // 페이지 4 (JSON)
-            .thenReturn(createMockListV2JsonWithProducts("1300", true, "1200", "1300"));       // 페이지 5 (호출되지 않아야 함)
+        when(restTemplate.getForObject(any(), eq(byte[].class)))
+            .thenReturn(toUtf8Bytes(createMockInitialHtmlWithProducts("300", true, "200", "300")))          // 페이지 0 (HTML)
+            .thenReturn(toUtf8Bytes(createMockListV2JsonWithProducts("500", true, "400", "500")))           // 페이지 1 (JSON)
+            .thenReturn(toUtf8Bytes(createMockListV2JsonWithProducts("700", true, "600", "700")))           // 페이지 2 (JSON)
+            .thenReturn(toUtf8Bytes(createMockListV2JsonWithProducts("900", true, "800", "900")))           // 페이지 3 (JSON)
+            .thenReturn(toUtf8Bytes(createMockListV2JsonWithProducts("1100", true, "1000", "1100")))        // 페이지 4 (JSON)
+            .thenReturn(toUtf8Bytes(createMockListV2JsonWithProducts("1300", true, "1200", "1300")));       // 페이지 5 (호출되지 않아야 함)
             
         when(hotdealAlimEntityREP.findBySendYn("n")).thenReturn(Arrays.asList());
 
@@ -278,7 +278,7 @@ class HotdealReaderTest {
         assertThat(itemCount).isEqualTo(10); // 5페이지 * 2개씩 = 10개
         
         // RestTemplate이 정확히 5번 호출되었는지 확인
-        verify(restTemplate, times(5)).getForObject(any(), eq(String.class));
+        verify(restTemplate, times(5)).getForObject(any(), eq(byte[].class));
     }
 
     @Test
@@ -286,8 +286,8 @@ class HotdealReaderTest {
     void findHotdeal_WithHtmlParsingError_ShouldReturnEmptyResult() throws Exception {
         // Given
         when(hotdealEntityREP.findTop1ByOrderByProductIdDesc()).thenReturn(Arrays.asList());
-        when(restTemplate.getForObject(any(), eq(String.class)))
-            .thenReturn("Invalid HTML content"); // 파싱할 수 없는 HTML
+        when(restTemplate.getForObject(any(), eq(byte[].class)))
+            .thenReturn(toUtf8Bytes("Invalid HTML content")); // 파싱할 수 없는 HTML
         when(hotdealAlimEntityREP.findBySendYn("n")).thenReturn(Arrays.asList());
 
         // When
@@ -303,15 +303,15 @@ class HotdealReaderTest {
     void findHotdeal_ShouldParseKoreanWonAndDollarPricesCorrectly() throws Exception {
         // Given
         when(hotdealEntityREP.findTop1ByOrderByProductIdDesc()).thenReturn(Arrays.asList());
-        when(restTemplate.getForObject(any(), eq(String.class)))
-            .thenReturn(createMockInitialHtmlWithCustomPrices(
+        when(restTemplate.getForObject(any(), eq(byte[].class)))
+            .thenReturn(toUtf8Bytes(createMockInitialHtmlWithCustomPrices(
                     "200",
                     false,
                     new String[][]{
                             {"100", "10,000원"},
                             {"200", "$50.99"}
                     }
-            ));
+            )));
         when(hotdealAlimEntityREP.findBySendYn("n")).thenReturn(Arrays.asList());
 
         // When
@@ -451,5 +451,9 @@ class HotdealReaderTest {
                 + "\"isNewWindowOpen\":true,"
                 + "\"nowClickCount\":1"
                 + "}";
+    }
+
+    private byte[] toUtf8Bytes(String value) {
+        return value.getBytes(StandardCharsets.UTF_8);
     }
 }

@@ -275,7 +275,7 @@ public class HotdealSVCImpl implements HotdealSVC {
         String regexEmojis = "[\uD83C-\uDBFF\uDC00-\uDFFF]+";
 
         String header = "| img | 제목 | 가격 | 날짜 |\n";
-        String line = "| :--:|:----:|:--: |\n";
+        String line = "| :--:|:----:|:----:|:----: |\n";
 //        String header = "| 시각 | 제목 | 시각 | 제목 |\n";
 //        String line = "| :-:|:--:|:-:|:--: |\n";
         result.append(header)
@@ -290,33 +290,37 @@ public class HotdealSVCImpl implements HotdealSVC {
                 }
                 HotdealEntity remove = q.remove();
 
-                String date;
-                if (remove == null || remove.getCreateDate() == null) {
-                    date = "";
-                } else {
-                    date = remove.getCreateDate().format(dtf);
+                String date = "";
+                if (remove != null) {
+                    LocalDateTime dateTime = remove.getCreateDate() != null ? remove.getCreateDate() : remove.getOriginalCreatedAt();
+                    date = dateTime == null ? "" : dateTime.format(dtf);
                 }
 
+                String priceStr = remove == null || StringUtils.isBlank(remove.getPriceStr()) ? "0" : remove.getPriceStr();
+                String title = remove == null ? "" : remove.getTitle();
+                String link = remove == null ? "" : remove.getLink();
+                String img = remove == null ? "" : remove.getImgUrl100X100();
+
                 content.append("| ")
-                        .append(remove.getImgUrl100X100())
+                        .append(img)
                         .append(" | ")
 
                         .append("[")
-                        .append(remove.getTitle().replaceAll(regexEmojis, "")
+                        .append(title.replaceAll(regexEmojis, "")
                                 .replace("[", "")
                                 .replace("]", "")
                                 .replace("♥", "")
                                 .replace("|", ""))
                         .append("]")
                         .append("(")
-                        .append(remove.getLink())
+                        .append(link)
                         .append(")")
                         .append(" | ")
 
-                        .append(date)
+                        .append(priceStr)
                         .append(" | ")
 
-                        .append(remove.getPriceStr());
+                        .append(date);
             }
             content.append(" |\n");
             result.append(content);
@@ -362,7 +366,8 @@ public class HotdealSVCImpl implements HotdealSVC {
                 .toUri();
 
         try {
-            String response = restTemplate.getForObject(uri, String.class);
+            byte[] responseBytes = restTemplate.getForObject(uri, byte[].class);
+            String response = this.decodeUtf8(responseBytes);
             if (StringUtils.isBlank(response)) {
                 return HotdealPage.empty();
             }
@@ -405,7 +410,8 @@ public class HotdealSVCImpl implements HotdealSVC {
             }
 
             URI uri = uriBuilder.encode().build().toUri();
-            String response = restTemplate.getForObject(uri, String.class);
+            byte[] responseBytes = restTemplate.getForObject(uri, byte[].class);
+            String response = this.decodeUtf8(responseBytes);
             if (StringUtils.isBlank(response)) {
                 return HotdealPage.empty();
             }
@@ -735,6 +741,13 @@ public class HotdealSVCImpl implements HotdealSVC {
             log.error("decodeSignature error", e);
             return SignatureToken.empty();
         }
+    }
+
+    private String decodeUtf8(byte[] responseBytes) {
+        if (responseBytes == null || responseBytes.length == 0) {
+            return "";
+        }
+        return new String(responseBytes, StandardCharsets.UTF_8);
     }
 
     private record SignatureToken(String h, String t) {
