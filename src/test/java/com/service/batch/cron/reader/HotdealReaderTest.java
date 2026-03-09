@@ -15,8 +15,9 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.batch.item.support.ListItemReader;
 import org.springframework.web.client.RestTemplate;
 
-import java.time.LocalDateTime;
+import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
+import java.util.Base64;
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -52,7 +53,7 @@ class HotdealReaderTest {
         // Given - 기존 데이터 없음
         when(hotdealEntityREP.findTop1ByOrderByProductIdDesc()).thenReturn(Arrays.asList());
         when(restTemplate.getForObject(any(), eq(String.class)))
-            .thenReturn(createMockHtmlWithProducts("100", "200", "300"));
+            .thenReturn(createMockInitialHtmlWithProducts("300", false, "100", "200", "300"));
         when(hotdealAlimEntityREP.findBySendYn("n")).thenReturn(Arrays.asList());
 
         // When
@@ -65,6 +66,20 @@ class HotdealReaderTest {
         HotdealDTO firstItem = reader.read();
         assertThat(firstItem).isNotNull();
         assertThat(firstItem.getProductId()).isEqualTo(100L);
+        assertThat(firstItem.getSite()).isEqualTo("Test Site");
+        assertThat(firstItem.getShop()).isEqualTo("Test Shop");
+        assertThat(firstItem.getSiteIconUrl()).isEqualTo("https://cdn.algumon.com/site-icon/test.png");
+        assertThat(firstItem.getDeliveryInfo()).isEqualTo("무료");
+        assertThat(firstItem.getPerPriceText()).isEqualTo("");
+        assertThat(firstItem.getOriginalLikes()).isEqualTo(0);
+        assertThat(firstItem.getOriginalDisLikes()).isEqualTo(0);
+        assertThat(firstItem.getOriginalComments()).isEqualTo(0);
+        assertThat(firstItem.getCreatedAt()).isEqualTo("2026-03-09T12:10:18.121");
+        assertThat(firstItem.getAuthorNickname()).isEqualTo("tester");
+        assertThat(firstItem.getEnded()).isFalse();
+        assertThat(firstItem.getIsRead()).isFalse();
+        assertThat(firstItem.getIsNewWindowOpen()).isTrue();
+        assertThat(firstItem.getNowClickCount()).isEqualTo(1);
         
         // RestTemplate이 첫 페이지만 호출되었는지 확인
         verify(restTemplate, times(1)).getForObject(any(), eq(String.class));
@@ -83,10 +98,10 @@ class HotdealReaderTest {
         // 세 번째 페이지: productId 140, 160 (140은 기존보다 작음, 160은 새로운 데이터) -> limit2=true이므로 계속
         // 네 번째 페이지: productId 130, 140 (모두 기존보다 작음) -> limit2=false이므로 중단
         when(restTemplate.getForObject(any(), eq(String.class)))
-            .thenReturn(createMockHtmlWithProducts("100", "200"))      // 페이지 0
-            .thenReturn(createMockHtmlWithProducts("300", "400"))      // 페이지 1  
-            .thenReturn(createMockHtmlWithProducts("140", "160"))      // 페이지 2
-            .thenReturn(createMockHtmlWithProducts("130", "140"));     // 페이지 3
+            .thenReturn(createMockInitialHtmlWithProducts("200", true, "100", "200"))          // 페이지 0 (HTML)
+            .thenReturn(createMockListV2JsonWithProducts("400", true, "300", "400"))           // 페이지 1 (JSON)
+            .thenReturn(createMockListV2JsonWithProducts("160", true, "140", "160"))           // 페이지 2 (JSON)
+            .thenReturn(createMockListV2JsonWithProducts("140", true, "130", "140"));          // 페이지 3 (JSON)
         
         when(hotdealAlimEntityREP.findBySendYn("n")).thenReturn(Arrays.asList());
 
@@ -130,9 +145,9 @@ class HotdealReaderTest {
         // 두 번째 페이지: productId 300, 400 (모두 새로운 데이터)
         // 세 번째 페이지: productId 120, 140 (모두 기존보다 작음) -> limit2=false로 중단
         when(restTemplate.getForObject(any(), eq(String.class)))
-            .thenReturn(createMockHtmlWithProducts("100", "200"))      // 페이지 0
-            .thenReturn(createMockHtmlWithProducts("300", "400"))      // 페이지 1  
-            .thenReturn(createMockHtmlWithProducts("120", "140"));     // 페이지 2 - 새 데이터 없음
+            .thenReturn(createMockInitialHtmlWithProducts("200", true, "100", "200"))          // 페이지 0 (HTML)
+            .thenReturn(createMockListV2JsonWithProducts("400", true, "300", "400"))           // 페이지 1 (JSON)
+            .thenReturn(createMockListV2JsonWithProducts("140", true, "120", "140"));          // 페이지 2 (JSON) - 새 데이터 없음
         
         when(hotdealAlimEntityREP.findBySendYn("n")).thenReturn(Arrays.asList());
 
@@ -170,7 +185,7 @@ class HotdealReaderTest {
         
         // 첫 번째 페이지에 기존 productId 200이 포함됨 (limit1 = true가 되어 중단)
         when(restTemplate.getForObject(any(), eq(String.class)))
-            .thenReturn(createMockHtmlWithProducts("200", "300", "400"));
+            .thenReturn(createMockInitialHtmlWithProducts("400", true, "200", "300", "400"));
         
         when(hotdealAlimEntityREP.findBySendYn("n")).thenReturn(Arrays.asList());
 
@@ -205,8 +220,8 @@ class HotdealReaderTest {
         // 첫 번째 페이지: 600, 700 (모두 새로운 데이터)
         // 두 번째 페이지: 300, 400 (모두 기존 데이터보다 작음 - limit2=false가 되어 중단)
         when(restTemplate.getForObject(any(), eq(String.class)))
-            .thenReturn(createMockHtmlWithProducts("600", "700"))      // 페이지 0
-            .thenReturn(createMockHtmlWithProducts("300", "400"));     // 페이지 1
+            .thenReturn(createMockInitialHtmlWithProducts("700", true, "600", "700"))          // 페이지 0 (HTML)
+            .thenReturn(createMockListV2JsonWithProducts("400", true, "300", "400"));          // 페이지 1 (JSON)
         
         when(hotdealAlimEntityREP.findBySendYn("n")).thenReturn(Arrays.asList());
 
@@ -240,12 +255,12 @@ class HotdealReaderTest {
             
         // 각 페이지마다 기존 데이터보다 큰 productId만 반환 (5페이지 모두 새로운 데이터)
         when(restTemplate.getForObject(any(), eq(String.class)))
-            .thenReturn(createMockHtmlWithProducts("200", "300")) // 페이지 0
-            .thenReturn(createMockHtmlWithProducts("400", "500")) // 페이지 1
-            .thenReturn(createMockHtmlWithProducts("600", "700")) // 페이지 2
-            .thenReturn(createMockHtmlWithProducts("800", "900")) // 페이지 3
-            .thenReturn(createMockHtmlWithProducts("1000", "1100")) // 페이지 4
-            .thenReturn(createMockHtmlWithProducts("1200", "1300")); // 페이지 5 (호출되지 않아야 함)
+            .thenReturn(createMockInitialHtmlWithProducts("300", true, "200", "300"))          // 페이지 0 (HTML)
+            .thenReturn(createMockListV2JsonWithProducts("500", true, "400", "500"))           // 페이지 1 (JSON)
+            .thenReturn(createMockListV2JsonWithProducts("700", true, "600", "700"))           // 페이지 2 (JSON)
+            .thenReturn(createMockListV2JsonWithProducts("900", true, "800", "900"))           // 페이지 3 (JSON)
+            .thenReturn(createMockListV2JsonWithProducts("1100", true, "1000", "1100"))        // 페이지 4 (JSON)
+            .thenReturn(createMockListV2JsonWithProducts("1300", true, "1200", "1300"));       // 페이지 5 (호출되지 않아야 함)
             
         when(hotdealAlimEntityREP.findBySendYn("n")).thenReturn(Arrays.asList());
 
@@ -289,7 +304,14 @@ class HotdealReaderTest {
         // Given
         when(hotdealEntityREP.findTop1ByOrderByProductIdDesc()).thenReturn(Arrays.asList());
         when(restTemplate.getForObject(any(), eq(String.class)))
-            .thenReturn(createMockHtmlWithDifferentPrices());
+            .thenReturn(createMockInitialHtmlWithCustomPrices(
+                    "200",
+                    false,
+                    new String[][]{
+                            {"100", "10,000원"},
+                            {"200", "$50.99"}
+                    }
+            ));
         when(hotdealAlimEntityREP.findBySendYn("n")).thenReturn(Arrays.asList());
 
         // When
@@ -317,42 +339,117 @@ class HotdealReaderTest {
         return mockHotdeal;
     }
 
-    private String createMockHtmlWithProducts(String... productIds) {
-        StringBuilder html = new StringBuilder("<html><body>");
-        
-        for (String productId : productIds) {
-            html.append("<div class='post-li' data-post-id='").append(productId).append("'>")
-                .append("<div class='item-name'>Product ").append(productId).append("</div>")
-                .append("<div class='product-price'>10,000원</div>")
-                .append("<div class='product-link'><a href='/product-").append(productId).append("'></a></div>")
-                .append("<div class='product-img'><img src='product-").append(productId).append(".jpg'></div>")
-                .append("<div class='label shop'>Test Shop</div>")
-                .append("<div class='label site'>Test Site</div>")
-                .append("</div>");
+    private String createMockInitialHtmlWithProducts(String endCursor, boolean hasNext, String... productIds) {
+        String[][] productPricePairs = new String[productIds.length][2];
+        for (int i = 0; i < productIds.length; i++) {
+            productPricePairs[i][0] = productIds[i];
+            productPricePairs[i][1] = "10,000원";
         }
-        
-        html.append("</body></html>");
-        return html.toString();
+        return createMockInitialHtmlWithCustomPrices(endCursor, hasNext, productPricePairs);
     }
 
-    private String createMockHtmlWithDifferentPrices() {
-        return "<html><body>" +
-               "<div class='post-li' data-post-id='100'>" +
-               "<div class='item-name'>Korean Won Product</div>" +
-               "<div class='product-price'>10,000원</div>" +
-               "<div class='product-link'><a href='/product-100'></a></div>" +
-               "<div class='product-img'><img src='product-100.jpg'></div>" +
-               "<div class='label shop'>Shop A</div>" +
-               "<div class='label site'>Site A</div>" +
-               "</div>" +
-               "<div class='post-li' data-post-id='200'>" +
-               "<div class='item-name'>Dollar Product</div>" +
-               "<div class='product-price'>$50.99</div>" +
-               "<div class='product-link'><a href='/product-200'></a></div>" +
-               "<div class='product-img'><img src='product-200.jpg'></div>" +
-               "<div class='label shop'>Shop B</div>" +
-               "<div class='label site'>Site B</div>" +
-               "</div>" +
-               "</body></html>";
+    private String createMockInitialHtmlWithCustomPrices(String endCursor, boolean hasNext, String[][] productPricePairs) {
+        StringBuilder contentsBuilder = new StringBuilder();
+        for (int i = 0; i < productPricePairs.length; i++) {
+            String productId = productPricePairs[i][0];
+            String price = productPricePairs[i][1];
+            if (i > 0) {
+                contentsBuilder.append(",");
+            }
+            contentsBuilder.append(createJsDealLiteral(productId, price));
+        }
+
+        String encodedSignature = Base64.getEncoder().encodeToString("test-h_111".getBytes(StandardCharsets.UTF_8));
+
+        return "<html><body><script>" +
+                "kit.start(app, element, {data:[{},{data:{deals:{contents:[" + contentsBuilder +
+                "],endCursor:\"" + endCursor + "\",hasNext:" + hasNext + "},s:\"" + encodedSignature + "\"}}]});" +
+                "</script></body></html>";
+    }
+
+    private String createMockListV2JsonWithProducts(String endCursor, boolean hasNext, String... productIds) {
+        StringBuilder contentsBuilder = new StringBuilder();
+        for (int i = 0; i < productIds.length; i++) {
+            if (i > 0) {
+                contentsBuilder.append(",");
+            }
+            contentsBuilder.append(createJsonDealLiteral(productIds[i], "10,000원"));
+        }
+
+        return "{"
+                + "\"contents\":[" + contentsBuilder + "],"
+                + "\"endCursor\":\"" + endCursor + "\","
+                + "\"hasNext\":" + hasNext + ","
+                + "\"h\":\"test-h\","
+                + "\"t\":\"111\""
+                + "}";
+    }
+
+    private String createJsDealLiteral(String productId, String price) {
+        return "{"
+                + "id:" + productId + ","
+                + "siteName:\"Test Site\","
+                + "siteIconUrl:\"https://cdn.algumon.com/site-icon/test.png\","
+                + "storeName:\"Test Shop\","
+                + "rankNum:null,"
+                + "title:\"Product " + productId + "\","
+                + "thumbnailUrl:\"https://cdn.algumon.com/image-v2/deal/" + productId + ".png?d=200x200\","
+                + "price:\"" + price + "\","
+                + "deliveryInfo:\"무료\","
+                + "perPriceText:\"\","
+                + "originalUrl:\"https://www.algumon.com/l/d/" + productId + "\","
+                + "originalLikes:0,"
+                + "originalDisLikes:0,"
+                + "originalComments:0,"
+                + "createdAt:\"2026-03-09T12:10:18.121\","
+                + "boughtAt:null,"
+                + "userWant:false,"
+                + "userBought:false,"
+                + "wantCount:0,"
+                + "boughtCount:0,"
+                + "commentCount:0,"
+                + "authorNickname:\"tester\","
+                + "legacyEditUrl:\"/channel/unknown/" + productId + "/modify\","
+                + "ended:false,"
+                + "blockNewComments:false,"
+                + "exchangeRate:null,"
+                + "isRead:false,"
+                + "isNewWindowOpen:true,"
+                + "nowClickCount:1"
+                + "}";
+    }
+
+    private String createJsonDealLiteral(String productId, String price) {
+        return "{"
+                + "\"id\":" + productId + ","
+                + "\"siteName\":\"Test Site\","
+                + "\"siteIconUrl\":\"https://cdn.algumon.com/site-icon/test.png\","
+                + "\"storeName\":\"Test Shop\","
+                + "\"rankNum\":null,"
+                + "\"title\":\"Product " + productId + "\","
+                + "\"thumbnailUrl\":\"https://cdn.algumon.com/image-v2/deal/" + productId + ".png?d=200x200\","
+                + "\"price\":\"" + price + "\","
+                + "\"deliveryInfo\":\"무료\","
+                + "\"perPriceText\":\"\","
+                + "\"originalUrl\":\"https://www.algumon.com/l/d/" + productId + "\","
+                + "\"originalLikes\":0,"
+                + "\"originalDisLikes\":0,"
+                + "\"originalComments\":0,"
+                + "\"createdAt\":\"2026-03-09T12:10:18.121\","
+                + "\"boughtAt\":null,"
+                + "\"userWant\":false,"
+                + "\"userBought\":false,"
+                + "\"wantCount\":0,"
+                + "\"boughtCount\":0,"
+                + "\"commentCount\":0,"
+                + "\"authorNickname\":\"tester\","
+                + "\"legacyEditUrl\":\"/channel/unknown/" + productId + "/modify\","
+                + "\"ended\":false,"
+                + "\"blockNewComments\":false,"
+                + "\"exchangeRate\":null,"
+                + "\"isRead\":false,"
+                + "\"isNewWindowOpen\":true,"
+                + "\"nowClickCount\":1"
+                + "}";
     }
 }

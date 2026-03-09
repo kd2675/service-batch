@@ -30,6 +30,7 @@ import org.springframework.web.util.UriComponentsBuilder;
 
 import java.net.URI;
 import java.nio.charset.StandardCharsets;
+import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
 import java.util.regex.Matcher;
@@ -109,6 +110,28 @@ public class HotdealSVCImpl implements HotdealSVC {
                             .img(v.getImg())
                             .shop(v.getShop())
                             .site(v.getSite())
+                            .siteIconUrl(v.getSiteIconUrl())
+                            .rankNum(v.getRankNum())
+                            .deliveryInfo(v.getDeliveryInfo())
+                            .perPriceText(v.getPerPriceText())
+                            .originalLikes(v.getOriginalLikes())
+                            .originalDisLikes(v.getOriginalDisLikes())
+                            .originalComments(v.getOriginalComments())
+                            .originalCreatedAt(parseDateTime(v.getCreatedAt()))
+                            .originalBoughtAt(parseDateTime(v.getBoughtAt()))
+                            .userWant(v.getUserWant())
+                            .userBought(v.getUserBought())
+                            .wantCount(v.getWantCount())
+                            .boughtCount(v.getBoughtCount())
+                            .commentCount(v.getCommentCount())
+                            .authorNickname(v.getAuthorNickname())
+                            .legacyEditUrl(v.getLegacyEditUrl())
+                            .ended(v.getEnded())
+                            .blockNewComments(v.getBlockNewComments())
+                            .exchangeRate(v.getExchangeRate())
+                            .isRead(v.getIsRead())
+                            .isNewWindowOpen(v.getIsNewWindowOpen())
+                            .nowClickCount(v.getNowClickCount())
                             .sendYn(v.getSendYn()).build()
                     ).toList();
 
@@ -237,6 +260,13 @@ public class HotdealSVCImpl implements HotdealSVC {
 
     private boolean isValidInput(String[] args) {
         return args.length == 4 && Integer.parseInt(args[3]) <= 10 || args.length == 2;
+    }
+
+    private LocalDateTime parseDateTime(String value) {
+        if (StringUtils.isBlank(value)) {
+            return null;
+        }
+        return LocalDateTime.parse(value);
     }
 
     private String convertHotdealMattermostMessage(List<HotdealEntity> entityList) {
