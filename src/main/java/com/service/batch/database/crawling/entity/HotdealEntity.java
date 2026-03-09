@@ -30,12 +30,6 @@ public class HotdealEntity extends CommonDateEntity {
     @Column(name = "title", nullable = false, length = 255)
     private String title;
 
-    @Column(name = "price", nullable = false)
-    private int price;
-
-    @Column(name = "price_slct", nullable = false, length = 1)
-    private String priceSlct;
-
     @Column(name = "price_str", nullable = false, length = 255)
     private String priceStr;
 

@@ -31,7 +31,7 @@ class HotdealEntityREPTest {
             HotdealEntity build = HotdealEntity.builder()
                     .productId(1000L + i).sendYn("n").title("title-" + i)
                     .site("test").shop("test").img("test.jpg")
-                    .price(1000).priceSlct("w").priceStr("1000원").link("test").build();
+                    .priceStr("1000원").link("test").build();
             setDates(build, LocalDateTime.now(), LocalDateTime.now());
             hotdealEntityREP.save(build);
         }

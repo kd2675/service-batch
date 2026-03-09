@@ -322,12 +322,10 @@ class HotdealReaderTest {
         HotdealDTO dollarItem = reader.read(); // 달러 상품
 
         assertThat(wonItem).isNotNull();
-        assertThat(wonItem.getPriceSlct()).isEqualTo("w"); // 원화
-        assertThat(wonItem.getPrice()).isEqualTo(10000);
+        assertThat(wonItem.getPriceStr()).contains("10,000원");
 
         assertThat(dollarItem).isNotNull();
-        assertThat(dollarItem.getPriceSlct()).isEqualTo("d"); // 달러
-        assertThat(dollarItem.getPrice()).isEqualTo(50);
+        assertThat(dollarItem.getPriceStr()).contains("$50.99");
     }
 
     private HotdealEntity createMockHotdealEntity(Long productId) {

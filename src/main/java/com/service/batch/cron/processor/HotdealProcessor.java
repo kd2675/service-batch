@@ -25,8 +25,6 @@ public class HotdealProcessor {
                 HotdealEntity hotdealEntity = HotdealEntity.builder()
                         .productId(item.getProductId())
                         .title(item.getTitle())
-                        .price(item.getPrice())
-                        .priceSlct(item.getPriceSlct())
                         .priceStr(item.getPriceStr())
                         .link(item.getLink())
                         .img(item.getImg())

@@ -12,8 +12,6 @@ public class HotdealDTO extends CommonDateEntity {
     private Long id;
     private Long productId;
     private String title;
-    private int price;
-    private String priceSlct;
     private String priceStr;
     private String link;
     private String img;
@@ -47,8 +45,6 @@ public class HotdealDTO extends CommonDateEntity {
             Long id,
             Long productId,
             String title,
-            int price,
-            String priceSlct,
             String priceStr,
             String link,
             String img,
@@ -59,8 +55,6 @@ public class HotdealDTO extends CommonDateEntity {
         this.id = id;
         this.productId = productId;
         this.title = title;
-        this.price = price;
-        this.priceSlct = priceSlct;
         this.priceStr = priceStr;
         this.link = link;
         this.img = img;

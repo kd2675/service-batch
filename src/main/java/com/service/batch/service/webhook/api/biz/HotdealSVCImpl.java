@@ -103,8 +103,6 @@ public class HotdealSVCImpl implements HotdealSVC {
                     .map(v -> HotdealEntity.builder()
                             .productId(v.getProductId())
                             .title(v.getTitle())
-                            .price(v.getPrice())
-                            .priceSlct(v.getPriceSlct())
                             .priceStr(v.getPriceStr())
                             .link(v.getLink())
                             .img(v.getImg())
@@ -575,8 +573,6 @@ public class HotdealSVCImpl implements HotdealSVC {
                     null,
                     Long.valueOf(id),
                     title,
-                    priceInfo.price(),
-                    priceInfo.priceSlct(),
                     priceInfo.priceStr(),
                     link,
                     img,
@@ -609,8 +605,6 @@ public class HotdealSVCImpl implements HotdealSVC {
                 null,
                 item.optLong("id"),
                 title,
-                priceInfo.price(),
-                priceInfo.priceSlct(),
                 priceInfo.priceStr(),
                 item.optString("originalUrl", ""),
                 img,
@@ -662,39 +656,16 @@ public class HotdealSVCImpl implements HotdealSVC {
     }
 
     private PriceInfo parsePriceInfo(String originPrice, String deliveryInfo, String perPriceText) {
-        int price;
-        String priceSlct;
         String priceStr;
 
         try {
-            if (originPrice.contains("$")) {
-                String replace = originPrice.split("\\.")[0]
-                        .replace("원", "")
-                        .replace(",", "")
-                        .replace("$", "")
-                        .replace(".", "")
-                        .replace("다양", "");
-                price = StringUtils.isNotEmpty(replace) ? Integer.parseInt(replace) : 0;
-            } else {
-                String replace = originPrice
-                        .replace("원", "")
-                        .replace(",", "")
-                        .replace("$", "")
-                        .replace(".", "")
-                        .replace("다양", "")
-                        .trim();
-                price = StringUtils.isNotEmpty(replace) ? Integer.parseInt(replace) : 0;
-            }
-            priceSlct = originPrice.contains("$") ? "d" : "w";
             priceStr = this.buildPriceStr(originPrice, deliveryInfo, perPriceText);
         } catch (Exception e) {
-            price = 0;
-            priceSlct = "w";
             priceStr = "0";
             log.error("price error -> {}", e.getMessage());
         }
 
-        return new PriceInfo(price, priceSlct, priceStr);
+        return new PriceInfo(priceStr);
     }
 
     private String buildPriceStr(String originPrice, String deliveryInfo, String perPriceText) {
@@ -762,7 +733,7 @@ public class HotdealSVCImpl implements HotdealSVC {
         }
     }
 
-    private record PriceInfo(int price, String priceSlct, String priceStr) {
+    private record PriceInfo(String priceStr) {
     }
 
     private String convertHotdealAlimMattermostMessage(List<HotdealAlimEntity> entityList) {
