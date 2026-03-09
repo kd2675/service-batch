@@ -14,6 +14,8 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.example.log.annotation.Log;
+import org.json.JSONArray;
+import org.json.JSONObject;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
@@ -27,13 +29,23 @@ import org.springframework.web.client.RestTemplate;
 import org.springframework.web.util.UriComponentsBuilder;
 
 import java.net.URI;
+import java.nio.charset.StandardCharsets;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 @Slf4j
 @RequiredArgsConstructor
 @Service
 public class HotdealSVCImpl implements HotdealSVC {
+    private static final int MAX_HOTDEAL_CALL_COUNT = 5;
+    private static final String ALGUMON_URL = "https://www.algumon.com";
+    private static final Pattern END_CURSOR_PATTERN = Pattern.compile("endCursor\\s*:\\s*\"([^\"]+)\"");
+    private static final Pattern HAS_NEXT_PATTERN = Pattern.compile("hasNext\\s*:\\s*(true|false)");
+    private static final Pattern SIGNATURE_PATTERN = Pattern.compile("s\\s*:\\s*\"([^\"]+)\"");
+    private static final Pattern UNQUOTED_KEY_PATTERN = Pattern.compile("([\\{,])\\s*([A-Za-z_][A-Za-z0-9_]*)\\s*:");
+
     private final MattermostUtil mattermostUtil;
     private final HotdealEntityREP hotdealEntityREP;
 
@@ -284,96 +296,430 @@ public class HotdealSVCImpl implements HotdealSVC {
     }
 
     private List<HotdealDTO> getHotdeal(int num, String keyword) {
-        URI uri = UriComponentsBuilder
-                .fromUriString("https://www.algumon.com")
-                .path("/n/deal/" + num)
-                .queryParam("homeFeedType", "TYPE_ENDED")
-                .queryParam("site", "")
-                .queryParam("topSequence", "")
-                .queryParam("maxPid", "")
-                .queryParam("prevTopDid", "")
-                .queryParam("keyword", keyword)
+        HotdealPage hotdealPage = this.getInitialHotdealPage(keyword);
+        if (num <= 0) {
+            return hotdealPage.hotdeals();
+        }
+
+        int currentPage = 0;
+        int callCount = 1;
+
+        while (currentPage < num) {
+            if (!hotdealPage.hasNext() || callCount >= MAX_HOTDEAL_CALL_COUNT) {
+                return Collections.emptyList();
+            }
+
+            hotdealPage = this.getHotdealByCursor(hotdealPage.endCursor(), hotdealPage.h(), hotdealPage.t(), keyword);
+            currentPage++;
+            callCount++;
+        }
+
+        return hotdealPage.hotdeals();
+    }
+
+    private HotdealPage getInitialHotdealPage(String keyword) {
+        UriComponentsBuilder uriBuilder = UriComponentsBuilder
+                .fromUriString(ALGUMON_URL)
+                .path("/n/deal");
+
+        if (StringUtils.isNotBlank(keyword)) {
+            uriBuilder.queryParam("keyword", keyword);
+        }
+
+        URI uri = uriBuilder
                 .encode()
                 .build()
                 .toUri();
 
-        // JSON 데이터 가져오기
-        String response = restTemplate.getForObject(uri, String.class);
+        try {
+            String response = restTemplate.getForObject(uri, String.class);
+            if (StringUtils.isBlank(response)) {
+                return HotdealPage.empty();
+            }
 
-        // JSON 데이터 출력
-        try { // ObjectMapper 객체 생성
-            Document doc = Jsoup.parse(response);
-            Elements postElements = doc.select(".post-li");
+            List<HotdealDTO> hotdealDTOS = this.parseHotdealFromScript(response);
+            if (hotdealDTOS.isEmpty()) {
+                Document doc = Jsoup.parse(response);
+                hotdealDTOS = this.parseHotdealFromHtml(doc);
+            }
+            String endCursor = this.findFirstGroup(response, END_CURSOR_PATTERN).orElse("");
+            boolean hasNext = this.findFirstGroup(response, HAS_NEXT_PATTERN)
+                    .map(Boolean::parseBoolean)
+                    .orElse(false);
+            SignatureToken signatureToken = this.findFirstGroup(response, SIGNATURE_PATTERN)
+                    .map(this::decodeSignature)
+                    .orElse(SignatureToken.empty());
 
+            return new HotdealPage(hotdealDTOS, endCursor, hasNext, signatureToken.h(), signatureToken.t());
+        } catch (Exception e) {
+            log.error("getInitialHotdealPage error", e);
+            return HotdealPage.empty();
+        }
+    }
+
+    private HotdealPage getHotdealByCursor(String cursor, String h, String t, String keyword) {
+        if (StringUtils.isAnyBlank(cursor, h, t)) {
+            return HotdealPage.empty();
+        }
+
+        try {
+            UriComponentsBuilder uriBuilder = UriComponentsBuilder
+                    .fromUriString(ALGUMON_URL)
+                    .path("/n/deal/listv2")
+                    .queryParam("cursor", cursor)
+                    .queryParam("h", h)
+                    .queryParam("t", t);
+
+            if (StringUtils.isNotBlank(keyword)) {
+                uriBuilder.queryParam("keyword", keyword);
+            }
+
+            URI uri = uriBuilder.encode().build().toUri();
+            String response = restTemplate.getForObject(uri, String.class);
+            if (StringUtils.isBlank(response)) {
+                return HotdealPage.empty();
+            }
+
+            JSONObject jsonObject = new JSONObject(response);
+            JSONArray contents = jsonObject.optJSONArray("contents");
             List<HotdealDTO> hotdealDTOS = new ArrayList<>();
 
-            for (Element postElement : postElements) {
-                String id = postElement.attr("data-post-id");
-                String title = postElement.select(".item-name").text().trim();
-
-                String originPrice = postElement.select(".product-price").text();
-
-                int price;
-                String priceSlct = null;
-                String priceStr = null;
-                try {
-                    if (originPrice.contains("$")) {
-                        String replace = originPrice.split("\\.")[0]
-                                .replace("원", "")
-                                .replace(",", "")
-                                .replace("$", "")
-                                .replace(".", "")
-                                .replace("다양", "");
-                        price = StringUtils.isNotEmpty(replace) ? Integer.parseInt(replace) : 0;
-                    } else {
-                        String replace = originPrice
-                                .replace("원", "")
-                                .replace(",", "")
-                                .replace("$", "")
-                                .replace(".", "")
-                                .replace("다양", "")
-                                .trim();
-                        price = StringUtils.isNotEmpty(replace) ? Integer.parseInt(replace) : 0;
+            if (contents != null) {
+                for (int i = 0; i < contents.length(); i++) {
+                    JSONObject item = contents.optJSONObject(i);
+                    if (item == null) {
+                        continue;
                     }
-                    priceSlct = originPrice.contains("$") ? "d" : "w";
-                    priceStr = originPrice.trim();
-                } catch (Exception e) {
-                    price = 0;
-                    priceSlct = "w";
-                    priceStr = "0";
-                    log.error("price error -> {}", e);
+                    hotdealDTOS.add(this.toHotdealDTO(item));
                 }
+            }
 
-                String link = "https://www.algumon.com" + postElement.select(".product-link").attr("href").trim();
-                String img = postElement.select(".product-img").select("img").attr("src").trim();
-                if (img.contains("?")) {
-                    img = img.substring(0, img.indexOf("?"));
+            return new HotdealPage(
+                    hotdealDTOS,
+                    jsonObject.optString("endCursor", ""),
+                    jsonObject.optBoolean("hasNext", false),
+                    jsonObject.optString("h", ""),
+                    jsonObject.optString("t", "")
+            );
+        } catch (Exception e) {
+            log.error("getHotdealByCursor error : cursor={}, h={}, t={}", cursor, h, t, e);
+            return HotdealPage.empty();
+        }
+    }
+
+    private List<HotdealDTO> parseHotdealFromScript(String response) {
+        String contentsLiteral = this.extractDealContentsLiteral(response);
+        if (StringUtils.isBlank(contentsLiteral)) {
+            return Collections.emptyList();
+        }
+
+        try {
+            String contentsJson = this.normalizeContentsToJson(contentsLiteral);
+            JSONArray contents = new JSONArray(contentsJson);
+            List<HotdealDTO> hotdealDTOS = new ArrayList<>();
+
+            for (int i = 0; i < contents.length(); i++) {
+                JSONObject item = contents.optJSONObject(i);
+                if (item == null) {
+                    continue;
                 }
-                String shop = postElement.select(".label.shop").text().trim();
-                String site = postElement.select(".label.site:nth-of-type(1)").text().trim();
-
-                HotdealDTO product = new HotdealDTO(
-                        null,
-                        Long.valueOf(id),
-                        title,
-                        price,
-                        priceSlct,
-                        priceStr,
-                        link,
-                        img,
-                        shop,
-                        site,
-                        "n"
-                );
-                hotdealDTOS.add(product);
+                hotdealDTOS.add(this.toHotdealDTO(item));
             }
 
             return hotdealDTOS;
         } catch (Exception e) {
-            e.printStackTrace();
+            log.error("parseHotdealFromScript error", e);
+            return Collections.emptyList();
+        }
+    }
+
+    private String extractDealContentsLiteral(String response) {
+        Matcher startMatcher = Pattern.compile("deals\\s*:\\s*\\{\\s*contents\\s*:\\s*\\[").matcher(response);
+        if (!startMatcher.find()) {
+            return "";
         }
 
-        return Collections.emptyList();
+        int arrayStart = response.indexOf('[', startMatcher.start());
+        if (arrayStart < 0) {
+            return "";
+        }
+
+        int depth = 0;
+        boolean inString = false;
+        boolean escaped = false;
+
+        for (int i = arrayStart; i < response.length(); i++) {
+            char current = response.charAt(i);
+
+            if (inString) {
+                if (escaped) {
+                    escaped = false;
+                    continue;
+                }
+                if (current == '\\') {
+                    escaped = true;
+                    continue;
+                }
+                if (current == '"') {
+                    inString = false;
+                }
+                continue;
+            }
+
+            if (current == '"') {
+                inString = true;
+                continue;
+            }
+
+            if (current == '[') {
+                depth++;
+                continue;
+            }
+
+            if (current == ']') {
+                depth--;
+                if (depth == 0) {
+                    return response.substring(arrayStart + 1, i);
+                }
+            }
+        }
+
+        return "";
+    }
+
+    private String normalizeContentsToJson(String contentsLiteral) {
+        String jsonArray = "[" + contentsLiteral + "]";
+        jsonArray = jsonArray.replace("void 0", "null");
+        return UNQUOTED_KEY_PATTERN.matcher(jsonArray).replaceAll("$1\"$2\":");
+    }
+
+    private List<HotdealDTO> parseHotdealFromHtml(Document doc) {
+        Elements dealElements = doc.select("div[id^=deal-]");
+        List<HotdealDTO> hotdealDTOS = new ArrayList<>();
+
+        for (Element dealElement : dealElements) {
+            String id = StringUtils.removeStart(dealElement.id(), "deal-");
+            if (!StringUtils.isNumeric(id)) {
+                continue;
+            }
+
+            Element titleLink = dealElement.selectFirst("h3 a[href]");
+            if (titleLink == null) {
+                continue;
+            }
+
+            String title = titleLink.text().trim();
+            String link = titleLink.attr("href").trim();
+            if (StringUtils.startsWith(link, "/")) {
+                link = ALGUMON_URL + link;
+            }
+
+            Element imageElement = dealElement.selectFirst(".avatar a img");
+            String img = imageElement == null ? "" : imageElement.attr("src").trim();
+            if (img.contains("?")) {
+                img = img.substring(0, img.indexOf("?"));
+            }
+
+            Element priceElement = dealElement.selectFirst(".deal-price-text");
+            String originPrice = priceElement == null ? "" : priceElement.ownText().trim();
+            if (StringUtils.isBlank(originPrice) && priceElement != null) {
+                originPrice = priceElement.text().trim();
+            }
+            PriceInfo priceInfo = this.parsePriceInfo(originPrice);
+
+            String shop = Optional.ofNullable(dealElement.selectFirst("a.badge.badge-soft.badge-xs"))
+                    .map(v -> v.text().trim())
+                    .orElse("");
+
+            String site = Optional.ofNullable(dealElement.selectFirst("span.badge.badge-soft.badge-xs"))
+                    .map(v -> v.text().trim())
+                    .orElse("");
+
+            hotdealDTOS.add(new HotdealDTO(
+                    null,
+                    Long.valueOf(id),
+                    title,
+                    priceInfo.price(),
+                    priceInfo.priceSlct(),
+                    priceInfo.priceStr(),
+                    link,
+                    img,
+                    shop,
+                    site,
+                    "n"
+            ));
+        }
+
+        return hotdealDTOS;
+    }
+
+    private HotdealDTO toHotdealDTO(JSONObject item) {
+        String originPrice = item.optString("price", "");
+        String deliveryInfo = item.optString("deliveryInfo", "");
+        String perPriceText = item.optString("perPriceText", "");
+        PriceInfo priceInfo = this.parsePriceInfo(originPrice, deliveryInfo, perPriceText);
+
+        String title = item.optString("title", "");
+        if (item.optBoolean("ended", false)) {
+            title = "[종료] " + title;
+        }
+
+        String img = item.optString("thumbnailUrl", "");
+        if (img.contains("?")) {
+            img = img.substring(0, img.indexOf("?"));
+        }
+
+        HotdealDTO hotdealDTO = new HotdealDTO(
+                null,
+                item.optLong("id"),
+                title,
+                priceInfo.price(),
+                priceInfo.priceSlct(),
+                priceInfo.priceStr(),
+                item.optString("originalUrl", ""),
+                img,
+                item.optString("storeName", ""),
+                item.optString("siteName", ""),
+                "n"
+        );
+
+        hotdealDTO.setSiteIconUrl(this.optStringOrNull(item, "siteIconUrl"));
+        hotdealDTO.setRankNum(this.optInteger(item, "rankNum"));
+        hotdealDTO.setDeliveryInfo(this.optStringOrNull(item, "deliveryInfo"));
+        hotdealDTO.setPerPriceText(this.optStringOrNull(item, "perPriceText"));
+        hotdealDTO.setOriginalLikes(this.optInteger(item, "originalLikes"));
+        hotdealDTO.setOriginalDisLikes(this.optInteger(item, "originalDisLikes"));
+        hotdealDTO.setOriginalComments(this.optInteger(item, "originalComments"));
+        hotdealDTO.setCreatedAt(this.optStringOrNull(item, "createdAt"));
+        hotdealDTO.setBoughtAt(this.optStringOrNull(item, "boughtAt"));
+        hotdealDTO.setUserWant(this.optBoolean(item, "userWant"));
+        hotdealDTO.setUserBought(this.optBoolean(item, "userBought"));
+        hotdealDTO.setWantCount(this.optInteger(item, "wantCount"));
+        hotdealDTO.setBoughtCount(this.optInteger(item, "boughtCount"));
+        hotdealDTO.setCommentCount(this.optInteger(item, "commentCount"));
+        hotdealDTO.setAuthorNickname(this.optStringOrNull(item, "authorNickname"));
+        hotdealDTO.setLegacyEditUrl(this.optStringOrNull(item, "legacyEditUrl"));
+        hotdealDTO.setEnded(this.optBoolean(item, "ended"));
+        hotdealDTO.setBlockNewComments(this.optBoolean(item, "blockNewComments"));
+        hotdealDTO.setExchangeRate(this.optStringOrNull(item, "exchangeRate"));
+        hotdealDTO.setIsRead(this.optBoolean(item, "isRead"));
+        hotdealDTO.setIsNewWindowOpen(this.optBoolean(item, "isNewWindowOpen"));
+        hotdealDTO.setNowClickCount(this.optInteger(item, "nowClickCount"));
+
+        return hotdealDTO;
+    }
+
+    private Integer optInteger(JSONObject item, String key) {
+        return item.isNull(key) ? null : item.optInt(key);
+    }
+
+    private Boolean optBoolean(JSONObject item, String key) {
+        return item.isNull(key) ? null : item.optBoolean(key);
+    }
+
+    private String optStringOrNull(JSONObject item, String key) {
+        return item.isNull(key) ? null : item.optString(key, "");
+    }
+
+    private PriceInfo parsePriceInfo(String originPrice) {
+        return this.parsePriceInfo(originPrice, "", "");
+    }
+
+    private PriceInfo parsePriceInfo(String originPrice, String deliveryInfo, String perPriceText) {
+        int price;
+        String priceSlct;
+        String priceStr;
+
+        try {
+            if (originPrice.contains("$")) {
+                String replace = originPrice.split("\\.")[0]
+                        .replace("원", "")
+                        .replace(",", "")
+                        .replace("$", "")
+                        .replace(".", "")
+                        .replace("다양", "");
+                price = StringUtils.isNotEmpty(replace) ? Integer.parseInt(replace) : 0;
+            } else {
+                String replace = originPrice
+                        .replace("원", "")
+                        .replace(",", "")
+                        .replace("$", "")
+                        .replace(".", "")
+                        .replace("다양", "")
+                        .trim();
+                price = StringUtils.isNotEmpty(replace) ? Integer.parseInt(replace) : 0;
+            }
+            priceSlct = originPrice.contains("$") ? "d" : "w";
+            priceStr = this.buildPriceStr(originPrice, deliveryInfo, perPriceText);
+        } catch (Exception e) {
+            price = 0;
+            priceSlct = "w";
+            priceStr = "0";
+            log.error("price error -> {}", e.getMessage());
+        }
+
+        return new PriceInfo(price, priceSlct, priceStr);
+    }
+
+    private String buildPriceStr(String originPrice, String deliveryInfo, String perPriceText) {
+        StringBuilder priceStr = new StringBuilder();
+
+        if (StringUtils.isNotBlank(originPrice)) {
+            priceStr.append(originPrice.trim());
+        }
+
+        if (StringUtils.isNotBlank(perPriceText)) {
+            if (!priceStr.isEmpty()) {
+                priceStr.append(" ");
+            }
+            priceStr.append(perPriceText.trim());
+        }
+
+        if (StringUtils.isNotBlank(deliveryInfo)) {
+            if (!priceStr.isEmpty()) {
+                priceStr.append(" ");
+            }
+            priceStr.append("(배송 ").append(deliveryInfo.trim()).append(")");
+        }
+
+        return priceStr.isEmpty() ? "0" : priceStr.toString();
+    }
+
+    private Optional<String> findFirstGroup(String target, Pattern pattern) {
+        Matcher matcher = pattern.matcher(target);
+        if (!matcher.find() || matcher.groupCount() < 1) {
+            return Optional.empty();
+        }
+        return Optional.ofNullable(matcher.group(1));
+    }
+
+    private SignatureToken decodeSignature(String encoded) {
+        try {
+            String decoded = new String(Base64.getDecoder().decode(encoded), StandardCharsets.UTF_8);
+            int delimiterIndex = decoded.indexOf('_');
+            if (delimiterIndex < 0) {
+                return SignatureToken.empty();
+            }
+            return new SignatureToken(decoded.substring(0, delimiterIndex), decoded.substring(delimiterIndex + 1));
+        } catch (Exception e) {
+            log.error("decodeSignature error", e);
+            return SignatureToken.empty();
+        }
+    }
+
+    private record SignatureToken(String h, String t) {
+        private static SignatureToken empty() {
+            return new SignatureToken("", "");
+        }
+    }
+
+    private record HotdealPage(List<HotdealDTO> hotdeals, String endCursor, boolean hasNext, String h, String t) {
+        private static HotdealPage empty() {
+            return new HotdealPage(Collections.emptyList(), "", false, "", "");
+        }
+    }
+
+    private record PriceInfo(int price, String priceSlct, String priceStr) {
     }
 
     private String convertHotdealAlimMattermostMessage(List<HotdealAlimEntity> entityList) {

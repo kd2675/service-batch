@@ -7,6 +7,8 @@ import org.springframework.batch.core.configuration.annotation.StepScope;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
+import java.time.LocalDateTime;
+
 @Configuration
 public class HotdealProcessor {
     public static final String INS_HOTDEAL_PROCESSOR = "insHotdealProcessor";
@@ -30,12 +32,41 @@ public class HotdealProcessor {
                         .img(item.getImg())
                         .shop(item.getShop())
                         .site(item.getSite())
+                        .siteIconUrl(item.getSiteIconUrl())
+                        .rankNum(item.getRankNum())
+                        .deliveryInfo(item.getDeliveryInfo())
+                        .perPriceText(item.getPerPriceText())
+                        .originalLikes(item.getOriginalLikes())
+                        .originalDisLikes(item.getOriginalDisLikes())
+                        .originalComments(item.getOriginalComments())
+                        .originalCreatedAt(parseDateTime(item.getCreatedAt()))
+                        .originalBoughtAt(parseDateTime(item.getBoughtAt()))
+                        .userWant(item.getUserWant())
+                        .userBought(item.getUserBought())
+                        .wantCount(item.getWantCount())
+                        .boughtCount(item.getBoughtCount())
+                        .commentCount(item.getCommentCount())
+                        .authorNickname(item.getAuthorNickname())
+                        .legacyEditUrl(item.getLegacyEditUrl())
+                        .ended(item.getEnded())
+                        .blockNewComments(item.getBlockNewComments())
+                        .exchangeRate(item.getExchangeRate())
+                        .isRead(item.getIsRead())
+                        .isNewWindowOpen(item.getIsNewWindowOpen())
+                        .nowClickCount(item.getNowClickCount())
                         .build();
 
 
                 return hotdealEntity;
             }
         };
+    }
+
+    private LocalDateTime parseDateTime(String value) {
+        if (value == null || value.isBlank()) {
+            return null;
+        }
+        return LocalDateTime.parse(value);
     }
 
     @Bean(name = UPD_HOTDEAL_SEND_YN_Y)

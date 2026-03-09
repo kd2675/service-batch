@@ -9,6 +9,8 @@ import org.example.database.common.jpa.CommonDateEntity;
 import org.hibernate.annotations.ColumnDefault;
 import org.hibernate.annotations.DynamicInsert;
 
+import java.time.LocalDateTime;
+
 @Getter
 @Builder
 @NoArgsConstructor
@@ -48,6 +50,72 @@ public class HotdealEntity extends CommonDateEntity {
 
     @Column(name = "site", nullable = false, length = 255)
     private String site;
+
+    @Column(name = "site_icon_url", columnDefinition = "TEXT")
+    private String siteIconUrl;
+
+    @Column(name = "rank_num")
+    private Integer rankNum;
+
+    @Column(name = "delivery_info", length = 255)
+    private String deliveryInfo;
+
+    @Column(name = "per_price_text", length = 255)
+    private String perPriceText;
+
+    @Column(name = "original_likes")
+    private Integer originalLikes;
+
+    @Column(name = "original_dis_likes")
+    private Integer originalDisLikes;
+
+    @Column(name = "original_comments")
+    private Integer originalComments;
+
+    @Column(name = "original_created_at")
+    private LocalDateTime originalCreatedAt;
+
+    @Column(name = "original_bought_at")
+    private LocalDateTime originalBoughtAt;
+
+    @Column(name = "user_want")
+    private Boolean userWant;
+
+    @Column(name = "user_bought")
+    private Boolean userBought;
+
+    @Column(name = "want_count")
+    private Integer wantCount;
+
+    @Column(name = "bought_count")
+    private Integer boughtCount;
+
+    @Column(name = "comment_count")
+    private Integer commentCount;
+
+    @Column(name = "author_nickname", length = 255)
+    private String authorNickname;
+
+    @Column(name = "legacy_edit_url", columnDefinition = "TEXT")
+    private String legacyEditUrl;
+
+    @Column(name = "ended")
+    private Boolean ended;
+
+    @Column(name = "block_new_comments")
+    private Boolean blockNewComments;
+
+    @Column(name = "exchange_rate", length = 255)
+    private String exchangeRate;
+
+    @Column(name = "is_read")
+    private Boolean isRead;
+
+    @Column(name = "is_new_window_open")
+    private Boolean isNewWindowOpen;
+
+    @Column(name = "now_click_count")
+    private Integer nowClickCount;
 
     @ColumnDefault("'n'")
     @Column(name = "send_yn", nullable = false, length = 1)
