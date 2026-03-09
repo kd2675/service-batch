@@ -128,7 +128,7 @@ public class HotdealReader {
 
         URI uri = UriComponentsBuilder
                 .fromUriString("https://www.algumon.com")
-                .path("/more/" + num)
+                .path("/n/deal/" + num)
                 .queryParam("homeFeedType", "TYPE_ENDED")
                 .queryParam("site", "")
                 .queryParam("topSequence", "")
