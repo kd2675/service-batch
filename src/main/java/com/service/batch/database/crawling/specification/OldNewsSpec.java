@@ -5,6 +5,7 @@ import jakarta.persistence.criteria.Predicate;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.util.StringUtils;
 
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -13,6 +14,10 @@ public class OldNewsSpec {
         return ((root, query, builder) -> {
             List<Predicate> predicates0 = new ArrayList<>();
             List<Predicate> predicates1 = new ArrayList<>();
+            Predicate recentPredicate = builder.greaterThanOrEqualTo(
+                    root.get("pubDate"),
+                    LocalDateTime.now().minusMonths(1)
+            );
 
             for (String s : text) {
                 if (StringUtils.hasText(s)) {
@@ -28,7 +33,13 @@ public class OldNewsSpec {
 
             query.orderBy(builder.desc(root.get("id")));
 
-            return builder.or(builder.and(predicates0.toArray(new Predicate[0])), builder.and(predicates1.toArray(new Predicate[0])));
+            return builder.and(
+                    recentPredicate,
+                    builder.or(
+                            builder.and(predicates0.toArray(new Predicate[0])),
+                            builder.and(predicates1.toArray(new Predicate[0]))
+                    )
+            );
         });
     }
 }
