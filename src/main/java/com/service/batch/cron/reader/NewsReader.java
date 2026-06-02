@@ -143,6 +143,7 @@ public class NewsReader {
                         .peek(v -> v.setCategory(s))
                         .filter(v -> LocalDateTime.parse(v.getPubDate(), DateTimeFormatter.RFC_1123_DATE_TIME).isAfter(LOCAL_DATE_TIME_2)
                                 && LocalDateTime.parse(v.getPubDate(), DateTimeFormatter.RFC_1123_DATE_TIME).isBefore(LOCAL_DATE_TIME_1))
+                        .filter(v -> !newsREP.existsByLink(v.getLink()))
                         .toList()
                 );
                 start += 100;
