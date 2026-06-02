@@ -30,7 +30,6 @@ public enum RssNewsSourceEnum {
     NPR_TECHNOLOGY("npr", "rss-us", "https://feeds.npr.org/1019/rss.xml"),
     PBS_HEADLINES("pbsNewsHour", "rss-us", "https://www.pbs.org/newshour/feeds/rss/headlines"),
     NEWSNATION_LATEST("newsNation", "rss-us", "https://www.newsnationnow.com/feed/"),
-    NEWSMAX_NEWSFRONT("newsmax", "rss-us", "https://www.newsmax.com/rss/newsfront/16/"),
     FOX_BUSINESS_LATEST("foxBusiness", "rss-business", "https://moxie.foxbusiness.com/google-publisher/latest.xml"),
     NY_TIMES_HOME("nyTimes", "rss-us", "https://rss.nytimes.com/services/xml/rss/nyt/HomePage.xml"),
     NY_TIMES_US("nyTimes", "rss-us", "https://rss.nytimes.com/services/xml/rss/nyt/US.xml"),
