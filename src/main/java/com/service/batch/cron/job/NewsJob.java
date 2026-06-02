@@ -21,10 +21,12 @@ public class NewsJob {
     @Bean(name = INS_NEWS_JOB)
     public Job insNewsJob(
             JobRepository jobRepository,
-            @Qualifier(NewsStep.INS_NEWS_STEP) Step step
+            @Qualifier(NewsStep.INS_NEWS_STEP) Step step,
+            @Qualifier(NewsStep.INS_RSS_NEWS_STEP) Step rssStep
     ) {
         return new JobBuilder(INS_NEWS_JOB, jobRepository)
                 .start(step)
+                .next(rssStep)
                 .build();
     }
 

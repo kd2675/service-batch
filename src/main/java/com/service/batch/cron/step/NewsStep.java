@@ -10,6 +10,7 @@ import com.service.batch.cron.writer.NewsWriter;
 import com.service.batch.database.crawling.entity.MattermostSentEntity;
 import com.service.batch.database.crawling.entity.NewsEntity;
 import com.service.batch.service.news.api.vo.NaverNewsApiItemVO;
+import com.service.batch.service.news.api.vo.RssNewsItemVO;
 import org.springframework.batch.core.Step;
 import org.springframework.batch.core.configuration.annotation.JobScope;
 import org.springframework.batch.core.repository.JobRepository;
@@ -28,6 +29,7 @@ public class NewsStep {
     private static final int CHUNK_SIZE = 100;
 
     public static final String INS_NEWS_STEP = "insNewsStep";
+    public static final String INS_RSS_NEWS_STEP = "insRssNewsStep";
     public static final String SEND_NEWS_STEP = "sendNewsStep";
     public static final String SEND_NEWS_FLASH_STEP = "sendNewsFlashStep";
     public static final String SEND_NEWS_MARKETING_STEP = "sendNewsMarketingStep";
@@ -46,6 +48,24 @@ public class NewsStep {
     ) {
         return new StepBuilder(INS_NEWS_STEP, jobRepository)
                 .<NaverNewsApiItemVO, NewsEntity>chunk(CHUNK_SIZE, platformTransactionManager)
+                .reader(itemReader)
+                .processor(itemProcessor)
+                .writer(itemWriter)
+//                .allowStartIfComplete(true)
+                .build();
+    }
+
+    @Bean(name = INS_RSS_NEWS_STEP)
+    @JobScope
+    public Step insRssNewsStep(
+            JobRepository jobRepository,
+            @Qualifier("crawlingTransactionManager") PlatformTransactionManager platformTransactionManager,
+            @Qualifier(NewsReader.FIND_RSS_NEWS) ListItemReader<RssNewsItemVO> itemReader,
+            @Qualifier(NewsProcessor.RSS_NEWS_ITEM_VO_TO_NEWS_ENTITY) BasicProcessor<RssNewsItemVO, NewsEntity> itemProcessor,
+            @Qualifier(NewsWriter.JPA_ITEM_WRITER) JpaItemWriter<NewsEntity> itemWriter
+    ) {
+        return new StepBuilder(INS_RSS_NEWS_STEP, jobRepository)
+                .<RssNewsItemVO, NewsEntity>chunk(CHUNK_SIZE, platformTransactionManager)
                 .reader(itemReader)
                 .processor(itemProcessor)
                 .writer(itemWriter)

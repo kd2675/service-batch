@@ -3,6 +3,7 @@ package com.service.batch.cron.processor;
 import com.service.batch.cron.common.BasicProcessor;
 import com.service.batch.database.crawling.entity.NewsEntity;
 import com.service.batch.service.news.api.vo.NaverNewsApiItemVO;
+import com.service.batch.service.news.api.vo.RssNewsItemVO;
 import org.springframework.batch.core.configuration.annotation.StepScope;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -14,6 +15,8 @@ import java.time.format.DateTimeFormatter;
 public class NewsProcessor {
     public static final String NEWS_ENTITY_UPD_SEND_YN_Y = "newsEntityUpdSendYnToY";
     public static final String NAVER_NEWS_API_ITEM_VO_TO_NEWS_ENTITY = "naverNewsApiItemVoToNewsEntity";
+    public static final String RSS_NEWS_ITEM_VO_TO_NEWS_ENTITY = "rssNewsItemVoToNewsEntity";
+
     @Bean(name = NAVER_NEWS_API_ITEM_VO_TO_NEWS_ENTITY)
     @StepScope
     public BasicProcessor<NaverNewsApiItemVO, NewsEntity> naverNewsApiItemVoToNewsEntity() {
@@ -27,6 +30,26 @@ public class NewsProcessor {
                         .content(item.getDescription())
                         .link(item.getLink())
                         .pubDate(LocalDateTime.parse(item.getPubDate(), DateTimeFormatter.RFC_1123_DATE_TIME))
+                        .build();
+
+                return newsEntity;
+            }
+        };
+    }
+
+    @Bean(name = RSS_NEWS_ITEM_VO_TO_NEWS_ENTITY)
+    @StepScope
+    public BasicProcessor<RssNewsItemVO, NewsEntity> rssNewsItemVoToNewsEntity() {
+        return new BasicProcessor<RssNewsItemVO, NewsEntity>() {
+            @Override
+            public NewsEntity process(RssNewsItemVO item) throws Exception {
+                NewsEntity newsEntity = NewsEntity.builder()
+                        .category(item.getCategory())
+                        .company(item.getSource())
+                        .title(item.getTitle())
+                        .content(item.getDescription())
+                        .link(item.getLink())
+                        .pubDate(item.getPubDate())
                         .build();
 
                 return newsEntity;

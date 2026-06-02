@@ -26,6 +26,7 @@ public interface NewsREP extends JpaRepository<NewsEntity, Long> {
             @NonNull Collection<String> categories,
             @NonNull LocalDateTime createDate
     );
+    boolean existsByLink(@NonNull String link);
 
     Page<NewsEntity> findAll(Specification<NewsEntity> spec, Pageable pageable);
 
