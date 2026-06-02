@@ -1,4 +1,4 @@
-FROM gradle:8.7-jdk17 as builder
+FROM gradle:8.7-jdk21 as builder
 WORKDIR /build
 
 # 🔥 더 세밀한 의존성 캐싱 (서브프로젝트별)
@@ -18,7 +18,7 @@ COPY service-batch/ /build/service-batch/
 # 빌드 (기존과 동일)
 RUN gradle :service-batch:clean :service-batch:build --no-daemon --parallel
 
-FROM eclipse-temurin:17-jdk-jammy
+FROM eclipse-temurin:21-jdk-jammy
 WORKDIR /app
 
 #RUN apt -y install curl
