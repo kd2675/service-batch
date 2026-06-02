@@ -78,8 +78,6 @@ public class NewsReader {
     @StepScope
     public ListItemReader<NewsEntity> findTop15News(@Qualifier("crawlingEntityManagerFactory") EntityManagerFactory entityManagerFactory) {
         List<String> categories = new ArrayList<>(NewsKeywordEnum.getNewsKeywordValue());
-        categories.addAll(RssNewsSourceEnum.getNewsCategoryValue());
-        categories.addAll(GoogleNewsRssSourceEnum.getNewsCategoryValue());
 
         return new ListItemReader<>(
                 newsREP.findTop15BySendYnAndCategoryInOrderByIdDesc("n", categories)
