@@ -1,0 +1,25 @@
+use CRAWLING;
+
+ALTER TABLE HOT_DEAL
+    ADD COLUMN site_icon_url TEXT NULL,
+    ADD COLUMN rank_num INT NULL,
+    ADD COLUMN delivery_info VARCHAR(255) NULL,
+    ADD COLUMN per_price_text VARCHAR(255) NULL,
+    ADD COLUMN original_likes INT NULL,
+    ADD COLUMN original_dis_likes INT NULL,
+    ADD COLUMN original_comments INT NULL,
+    ADD COLUMN original_created_at DATETIME(3) NULL,
+    ADD COLUMN original_bought_at DATETIME(3) NULL,
+    ADD COLUMN user_want TINYINT(1) NULL,
+    ADD COLUMN user_bought TINYINT(1) NULL,
+    ADD COLUMN want_count INT NULL,
+    ADD COLUMN bought_count INT NULL,
+    ADD COLUMN comment_count INT NULL,
+    ADD COLUMN author_nickname VARCHAR(255) NULL,
+    ADD COLUMN legacy_edit_url TEXT NULL,
+    ADD COLUMN ended TINYINT(1) NULL,
+    ADD COLUMN block_new_comments TINYINT(1) NULL,
+    ADD COLUMN exchange_rate VARCHAR(255) NULL,
+    ADD COLUMN is_read TINYINT(1) NULL,
+    ADD COLUMN is_new_window_open TINYINT(1) NULL,
+    ADD COLUMN now_click_count INT NULL;

@@ -1,0 +1,5 @@
+use CRAWLING;
+
+ALTER TABLE HOT_DEAL
+    DROP COLUMN price,
+    DROP COLUMN price_slct;
