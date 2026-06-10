@@ -32,7 +32,7 @@ public class MattermostPostVO {
     private String originalId;
     private String message;
     private String type;
-    private Map<String, String> props;
+    private Map<String, Object> props;
     private String hashtags;
     @JsonProperty(value = "pending_post_id")
     private String pendingPostId;

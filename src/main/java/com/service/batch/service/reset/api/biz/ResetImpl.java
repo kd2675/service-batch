@@ -66,12 +66,11 @@ public class ResetImpl implements Reset {
         mattermostResetState.begin(id);
         try {
             for (;;) {
-                ResponseEntity<MattermostChannelVO> channel = mattermostUtil.selectAllChannel(id);
-                Map<String, MattermostPostVO> posts = channel.getBody().getPosts();
+                Map<String, MattermostPostVO> posts = getChannelPosts(id);
+                if (posts.isEmpty()) {
+                    break;
+                }
 
-                System.out.println(channel.getBody().getNextPostId());
-                System.out.println(posts.values().size());
-                System.out.println(channel.getBody().getHasNext());
 
                 for (MattermostPostVO vo : posts.values()) {
                     try {
@@ -86,6 +85,19 @@ public class ResetImpl implements Reset {
             }
         } finally {
             mattermostResetState.end(id);
+        }
+    }
+
+    private Map<String, MattermostPostVO> getChannelPosts(String channelId) {
+        try {
+            ResponseEntity<MattermostChannelVO> channel = mattermostUtil.selectAllChannel(channelId);
+            if (channel.getBody() == null || channel.getBody().getPosts() == null) {
+                return Map.of();
+            }
+            return channel.getBody().getPosts();
+        } catch (Exception e) {
+            log.warn("mattermost reset select channel posts skip channelId: {}", channelId, e);
+            return Map.of();
         }
     }
 }
