@@ -7,6 +7,7 @@ import com.service.batch.database.crawling.entity.MattermostSentEntity;
 import com.service.batch.database.crawling.entity.NewsEntity;
 import com.service.batch.database.crawling.repository.MattermostSentREP;
 import com.service.batch.utils.MattermostUtil;
+import com.service.batch.utils.vo.MattermostPostVO;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.batch.core.configuration.annotation.StepScope;
@@ -14,6 +15,7 @@ import org.springframework.batch.item.Chunk;
 import org.springframework.batch.item.ItemWriter;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.http.ResponseEntity;
 
 import java.text.NumberFormat;
 import java.time.format.DateTimeFormatter;
@@ -43,15 +45,7 @@ public class MattermostWriter {
         return new BasicWriter<NewsEntity>() {
             @Override
             public void write(Chunk<? extends NewsEntity> chunk) throws Exception {
-                mattermostSentREP.save(MattermostSentEntity.builder()
-                        .sentId(
-                                mattermostUtil.sendNewsChannel(convertNewsMattermostMessage(chunk))
-                                        .getBody()
-                                        .getId()
-                        )
-                        .category("news")
-                        .build()
-                );
+                saveMattermostSent(mattermostUtil.sendNewsChannel(convertNewsMattermostMessage(chunk)), "news");
             }
         };
     }
@@ -62,15 +56,7 @@ public class MattermostWriter {
         return new BasicWriter<NewsEntity>() {
             @Override
             public void write(Chunk<? extends NewsEntity> chunk) throws Exception {
-                mattermostSentREP.save(MattermostSentEntity.builder()
-                        .sentId(
-                                mattermostUtil.sendNewsFlashChannel(convertNewsMattermostMessage(chunk))
-                                        .getBody()
-                                        .getId()
-                        )
-                        .category("news")
-                        .build()
-                );
+                saveMattermostSent(mattermostUtil.sendNewsFlashChannel(convertNewsMattermostMessage(chunk)), "news");
             }
         };
     }
@@ -81,15 +67,7 @@ public class MattermostWriter {
         return new BasicWriter<NewsEntity>() {
             @Override
             public void write(Chunk<? extends NewsEntity> chunk) throws Exception {
-                mattermostSentREP.save(MattermostSentEntity.builder()
-                        .sentId(
-                                mattermostUtil.sendNewsMarketingChannel(convertNewsMattermostMessage(chunk))
-                                        .getBody()
-                                        .getId()
-                        )
-                        .category("news")
-                        .build()
-                );
+                saveMattermostSent(mattermostUtil.sendNewsMarketingChannel(convertNewsMattermostMessage(chunk)), "news");
             }
         };
     }
@@ -100,15 +78,7 @@ public class MattermostWriter {
         return new BasicWriter<NewsEntity>() {
             @Override
             public void write(Chunk<? extends NewsEntity> chunk) throws Exception {
-                mattermostSentREP.save(MattermostSentEntity.builder()
-                        .sentId(
-                                mattermostUtil.sendNewsStockChannel(convertNewsMattermostMessage(chunk))
-                                        .getBody()
-                                        .getId()
-                        )
-                        .category("news")
-                        .build()
-                );
+                saveMattermostSent(mattermostUtil.sendNewsStockChannel(convertNewsMattermostMessage(chunk)), "news");
             }
         };
     }
@@ -119,15 +89,7 @@ public class MattermostWriter {
         return new BasicWriter<HotdealEntity>() {
             @Override
             public void write(Chunk<? extends HotdealEntity> chunk) throws Exception {
-                mattermostSentREP.save(MattermostSentEntity.builder()
-                        .sentId(
-                                mattermostUtil.sendHotdealChannel(convertHotdealMattermostMessage(chunk))
-                                        .getBody()
-                                        .getId()
-                        )
-                        .category("hotdeal")
-                        .build()
-                );
+                saveMattermostSent(mattermostUtil.sendHotdealChannel(convertHotdealMattermostMessage(chunk)), "hotdeal");
             }
         };
     }
@@ -138,16 +100,7 @@ public class MattermostWriter {
         return new BasicWriter<CoinEntity>() {
             @Override
             public void write(Chunk<? extends CoinEntity> chunk) throws Exception {
-                mattermostSentREP.save(
-                        MattermostSentEntity.builder()
-                                .sentId(
-                                        mattermostUtil.sendCoinChannel(convertCoinMattermostMessageCol(chunk))
-                                                .getBody()
-                                                .getId()
-                                )
-                                .category("coin")
-                                .build()
-                );
+                saveMattermostSent(mattermostUtil.sendCoinChannel(convertCoinMattermostMessageCol(chunk)), "coin");
             }
         };
     }
@@ -172,6 +125,18 @@ public class MattermostWriter {
                 mattermostSentREP.deleteAll(chunk);
             }
         };
+    }
+
+    private void saveMattermostSent(ResponseEntity<MattermostPostVO> response, String category) {
+        if (response == null || response.getBody() == null || response.getBody().getId() == null) {
+            return;
+        }
+
+        mattermostSentREP.save(MattermostSentEntity.builder()
+                .sentId(response.getBody().getId())
+                .category(category)
+                .build()
+        );
     }
 
     public String convertNewsMattermostMessage(Chunk<? extends NewsEntity> entityList) {

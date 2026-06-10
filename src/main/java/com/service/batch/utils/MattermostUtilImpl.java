@@ -16,18 +16,37 @@ import org.springframework.web.client.HttpClientErrorException;
 import org.springframework.web.client.HttpServerErrorException;
 import org.springframework.web.client.RestTemplate;
 
+import java.util.Arrays;
+import java.util.List;
+import java.util.Set;
+
 
 @Slf4j
 @RequiredArgsConstructor
 @Service
 public class MattermostUtilImpl implements MattermostUtil {
     private static final String MATTERMOST_SYSTEM_BOT_TOKEN = "dxzfhkdinpgn8pqxydwaro13fo";
+    private static final int MATTERMOST_RESET_TRIGGER_COUNT = 3;
+    private static final List<Integer> MATTERMOST_RESET_POINT_IDS = Arrays.asList(1, 2);
+    private static final Set<String> RESET_MANAGED_CHANNEL_IDS = Set.of(
+            ChannelEnum.MATTERMOST_CHANNEL_NEWS.getValue(),
+            ChannelEnum.MATTERMOST_CHANNEL_NEWS_FLASH.getValue(),
+            ChannelEnum.MATTERMOST_CHANNEL_NEWS_MARKETING.getValue(),
+            ChannelEnum.MATTERMOST_CHANNEL_NEWS_STOCK.getValue(),
+            ChannelEnum.MATTERMOST_CHANNEL_COIN.getValue(),
+            ChannelEnum.MATTERMOST_CHANNEL_HOTDEAL.getValue()
+    );
 
     private final RestTemplate restTemplate;
     private final ResetPointREP resetPointREP;
+    private final MattermostResetState mattermostResetState;
 
     @Override
     public ResponseEntity<MattermostPostVO> send(String message, String channelId) {
+        if (isResetBlockedChannel(channelId)) {
+            throw new MattermostResetBlockedException(channelId);
+        }
+
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.APPLICATION_JSON);
         headers.setBearerAuth(MATTERMOST_SYSTEM_BOT_TOKEN);
@@ -146,6 +165,15 @@ public class MattermostUtilImpl implements MattermostUtil {
 
     @Override
     public ResponseEntity delete(String sentId) {
+        return delete(sentId, true);
+    }
+
+    @Override
+    public ResponseEntity deleteForReset(String sentId) {
+        return delete(sentId, false);
+    }
+
+    private ResponseEntity delete(String sentId, boolean saveResetPoint) {
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.APPLICATION_JSON);
         headers.setBearerAuth(MATTERMOST_SYSTEM_BOT_TOKEN);
@@ -165,13 +193,24 @@ public class MattermostUtilImpl implements MattermostUtil {
         } catch (HttpClientErrorException | HttpServerErrorException e) {
             log.error("mattermost delete error -> {}", e.toString());
 
-            ResetPointEntity resetPointEntity = ResetPointEntity.builder()
-                    .pointId(1)
-                    .pointExplain("mattermost delete error")
-                    .build();
-            resetPointREP.save(resetPointEntity);
+            if (saveResetPoint) {
+                ResetPointEntity resetPointEntity = ResetPointEntity.builder()
+                        .pointId(1)
+                        .pointExplain("mattermost delete error")
+                        .build();
+                resetPointREP.save(resetPointEntity);
+            }
 
             throw e;
         }
+    }
+
+    private boolean isResetBlockedChannel(String channelId) {
+        if (mattermostResetState.isResetting(channelId)) {
+            return true;
+        }
+
+        return RESET_MANAGED_CHANNEL_IDS.contains(channelId)
+                && resetPointREP.countByResetYnAndPointIdIn("n", MATTERMOST_RESET_POINT_IDS) >= MATTERMOST_RESET_TRIGGER_COUNT;
     }
 }

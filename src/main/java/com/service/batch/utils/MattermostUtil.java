@@ -23,4 +23,5 @@ public interface MattermostUtil {
 
     ResponseEntity<MattermostChannelVO> selectAllChannel(String channelId);
     ResponseEntity delete(String sentId);
+    ResponseEntity deleteForReset(String sentId);
 }

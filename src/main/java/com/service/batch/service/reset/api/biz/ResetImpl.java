@@ -6,6 +6,7 @@ import com.service.batch.database.batch.repository.ResetPointREP;
 import com.service.batch.database.crawling.entity.MattermostSentEntity;
 import com.service.batch.database.crawling.repository.MattermostSentREP;
 import com.service.batch.utils.MattermostUtil;
+import com.service.batch.utils.MattermostResetState;
 import com.service.batch.utils.enums.ChannelEnum;
 import com.service.batch.utils.vo.MattermostChannelVO;
 import com.service.batch.utils.vo.MattermostPostVO;
@@ -15,7 +16,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.Collections;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -25,15 +26,18 @@ import java.util.stream.Stream;
 @RequiredArgsConstructor
 @Service
 public class ResetImpl implements Reset {
+    private static final List<Integer> MATTERMOST_RESET_POINT_IDS = Arrays.asList(1, 2);
+
     private final ResetPointREP resetPointREP;
     private final MattermostSentREP mattermostSentREP;
 
     private final MattermostUtil mattermostUtil;
+    private final MattermostResetState mattermostResetState;
 
     @Transactional
     @Override
     public void mattermostDelReset() {
-        List<ResetPointEntity> resetPointEntities = resetPointREP.findByResetYnAndPointIdInOrderByCreateDateDesc("n", Collections.singletonList(1));
+        List<ResetPointEntity> resetPointEntities = resetPointREP.findByResetYnAndPointIdInOrderByCreateDateDesc("n", MATTERMOST_RESET_POINT_IDS);
 
         if (resetPointEntities.size() >= 3) {
             delChannelPost(ChannelEnum.MATTERMOST_CHANNEL_NEWS.getValue());
@@ -59,24 +63,29 @@ public class ResetImpl implements Reset {
     }
 
     private void delChannelPost(String id) {
-        for (;;) {
-            ResponseEntity<MattermostChannelVO> channel = mattermostUtil.selectAllChannel(id);
-            Map<String, MattermostPostVO> posts = channel.getBody().getPosts();
+        mattermostResetState.begin(id);
+        try {
+            for (;;) {
+                ResponseEntity<MattermostChannelVO> channel = mattermostUtil.selectAllChannel(id);
+                Map<String, MattermostPostVO> posts = channel.getBody().getPosts();
 
-            System.out.println(channel.getBody().getNextPostId());
-            System.out.println(posts.values().size());
-            System.out.println(channel.getBody().getHasNext());
+                System.out.println(channel.getBody().getNextPostId());
+                System.out.println(posts.values().size());
+                System.out.println(channel.getBody().getHasNext());
 
-            int idx = 0;
-            for (MattermostPostVO vo : posts.values()) {
-                try {
-                    mattermostUtil.delete(vo.getId());
-                }catch (Exception e){}
+                for (MattermostPostVO vo : posts.values()) {
+                    try {
+                        mattermostUtil.deleteForReset(vo.getId());
+                    } catch (Exception e) {
+                    }
+                }
+
+                if (posts.values().size() < 100) {
+                    break;
+                }
             }
-
-            if (posts.values().size() < 100) {
-                break;
-            }
+        } finally {
+            mattermostResetState.end(id);
         }
     }
 }

@@ -11,4 +11,5 @@ import java.util.List;
 @Repository
 public interface ResetPointREP extends JpaRepository<ResetPointEntity, Long> {
     List<ResetPointEntity> findByResetYnAndPointIdInOrderByCreateDateDesc(@NonNull String resetYn, @NonNull Collection<Integer> pointIds);
+    long countByResetYnAndPointIdIn(@NonNull String resetYn, @NonNull Collection<Integer> pointIds);
 }
