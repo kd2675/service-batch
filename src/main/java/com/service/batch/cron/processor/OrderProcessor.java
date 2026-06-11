@@ -9,6 +9,8 @@ import org.springframework.batch.core.configuration.annotation.StepScope;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
+import java.util.Locale;
+
 @Configuration
 @RequiredArgsConstructor
 public class OrderProcessor {
@@ -19,12 +21,15 @@ public class OrderProcessor {
     @Bean(name = ADJ_ORDER_PROCESSOR)
     @StepScope
     public BasicProcessor<OrderEntity, OrderEntity> itemProcessor() {
-        CoinEntity coinEntity = coinREP.findTop1ByOrderByIdDesc().stream().findFirst().orElseGet(CoinEntity::new);
-        int closingPrice = Integer.parseInt(coinEntity.getClosingPrice());
-
         return new BasicProcessor<OrderEntity, OrderEntity>() {
             @Override
             public OrderEntity process(OrderEntity orderEntity) throws Exception {
+                CoinEntity coinEntity = coinREP.findTopByCoinSymbolOrderByIdDesc(normalizeCoinSymbol(orderEntity.getCoinSlct()));
+                if (coinEntity == null) {
+                    return null;
+                }
+
+                int closingPrice = Integer.parseInt(coinEntity.getClosingPrice());
                 //b, s
                 String orderSlct = orderEntity.getOrderSlct();
                 //l, s
@@ -47,5 +52,12 @@ public class OrderProcessor {
 //        return CoinEntity::getId;
 //        return item -> CoinDTO.ofEntity(item).getId();
 //        return item -> item;
+    }
+
+    private String normalizeCoinSymbol(String coinSymbol) {
+        if (coinSymbol == null || coinSymbol.isBlank()) {
+            return "BTC";
+        }
+        return coinSymbol.toUpperCase(Locale.ROOT);
     }
 }

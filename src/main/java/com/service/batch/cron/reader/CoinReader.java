@@ -15,11 +15,13 @@ import org.springframework.context.annotation.Configuration;
 
 import java.time.LocalDateTime;
 import java.util.HashMap;
+import java.util.List;
 
 @RequiredArgsConstructor
 @Configuration
 public class CoinReader {
     private static final int BEFORE_MONTH_RANGE = 1;
+    private static final List<String> COIN_SYMBOLS = List.of("BTC", "ETH", "XRP");
     public static final String FIND_COIN_ENTITY_BEFORE_CREATE_DATE = "findCoinEntityBeforeCreateDate";
     public static final String FIND_TOP_10_BY_ORDER_BY_ID_DESC = "findTop10ByOrderByIdDesc";
     public static final String FIND_TOP_1_BY_ORDER_BY_ID_DESC = "findTop1ByOrderByIdDesc";
@@ -51,6 +53,6 @@ public class CoinReader {
     @Bean(name = FIND_TOP_1_BY_ORDER_BY_ID_DESC, destroyMethod = "")
     @StepScope
     public ListItemReader<CoinEntity> findTop1ByOrderByIdDesc(@Qualifier("crawlingEntityManagerFactory") EntityManagerFactory entityManagerFactory) {
-        return new ListItemReader<>(coinREP.findTop1ByOrderByIdDesc());
+        return new ListItemReader<>(coinREP.findLatestByCoinSymbolIn(COIN_SYMBOLS));
     }
 }

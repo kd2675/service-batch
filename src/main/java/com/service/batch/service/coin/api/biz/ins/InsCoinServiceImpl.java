@@ -14,11 +14,14 @@ import org.springframework.web.client.RestTemplate;
 import org.springframework.web.util.UriComponentsBuilder;
 
 import java.net.URI;
+import java.util.List;
 
 @Slf4j
 @RequiredArgsConstructor
 @Service
 public class InsCoinServiceImpl implements InsCoinService {
+    private static final List<String> COIN_SYMBOLS = List.of("BTC", "ETH", "XRP");
+
     private final RestTemplate restTemplate;
     private final CoinREP coinREP;
 
@@ -33,24 +36,37 @@ public class InsCoinServiceImpl implements InsCoinService {
                 .toUri();
 
         BitHumbResultVO forObject = restTemplate.getForObject(uri, BitHumbResultVO.class);
+        if (forObject == null || forObject.getData() == null) {
+            log.warn("bithumb ticker response is empty");
+            return;
+        }
 
         ObjectMapper objectMapper = new ObjectMapper();
-        BitHumbDataVO bitHumbDataVO = objectMapper.convertValue(forObject.getData().get("BTC"), BitHumbDataVO.class);
+        COIN_SYMBOLS.forEach(symbol -> {
+            Object data = forObject.getData().get(symbol);
+            if (data == null) {
+                log.warn("bithumb ticker data is empty: {}", symbol);
+                return;
+            }
 
-        CoinEntity coinEntity = CoinEntity.builder()
-                .openingPrice(bitHumbDataVO.getOpeningPrice())
-                .closingPrice(bitHumbDataVO.getClosingPrice())
-                .minPrice(bitHumbDataVO.getMinPrice())
-                .maxPrice(bitHumbDataVO.getMaxPrice())
-                .unitsTraded(bitHumbDataVO.getUnitsTraded())
-                .accTradeValue(bitHumbDataVO.getAccTradeValue())
-                .prevClosingPrice(bitHumbDataVO.getPrevClosingPrice())
-                .unitsTraded24H(bitHumbDataVO.getUnitsTraded24H())
-                .accTradeValue24H(bitHumbDataVO.getAccTradeValue24H())
-                .fluctate24H(bitHumbDataVO.getFluctate24H())
-                .fluctateRate24H(bitHumbDataVO.getFluctateRate24H())
-                .build();
+            BitHumbDataVO bitHumbDataVO = objectMapper.convertValue(data, BitHumbDataVO.class);
 
-        coinREP.save(coinEntity);
+            CoinEntity coinEntity = CoinEntity.builder()
+                    .coinSymbol(symbol)
+                    .openingPrice(bitHumbDataVO.getOpeningPrice())
+                    .closingPrice(bitHumbDataVO.getClosingPrice())
+                    .minPrice(bitHumbDataVO.getMinPrice())
+                    .maxPrice(bitHumbDataVO.getMaxPrice())
+                    .unitsTraded(bitHumbDataVO.getUnitsTraded())
+                    .accTradeValue(bitHumbDataVO.getAccTradeValue())
+                    .prevClosingPrice(bitHumbDataVO.getPrevClosingPrice())
+                    .unitsTraded24H(bitHumbDataVO.getUnitsTraded24H())
+                    .accTradeValue24H(bitHumbDataVO.getAccTradeValue24H())
+                    .fluctate24H(bitHumbDataVO.getFluctate24H())
+                    .fluctateRate24H(bitHumbDataVO.getFluctateRate24H())
+                    .build();
+
+            coinREP.save(coinEntity);
+        });
     }
 }

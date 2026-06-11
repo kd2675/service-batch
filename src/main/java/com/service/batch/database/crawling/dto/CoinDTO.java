@@ -8,6 +8,7 @@ import java.time.LocalDateTime;
 @Data
 public class CoinDTO {
     private Long id;
+    private String coinSymbol;
     private String openingPrice;
     private String closingPrice;
     private String minPrice;
@@ -25,6 +26,7 @@ public class CoinDTO {
     public static CoinDTO ofEntity(CoinEntity coinEntity) {
         return new CoinDTO(
                 coinEntity.getId(),
+                coinEntity.getCoinSymbol(),
                 coinEntity.getOpeningPrice(),
                 coinEntity.getClosingPrice(),
                 coinEntity.getMinPrice(),
@@ -44,8 +46,9 @@ public class CoinDTO {
     private CoinDTO() {
     }
 
-    private CoinDTO(Long id, String openingPrice, String closingPrice, String minPrice, String maxPrice, String unitsTraded, String accTradeValue, String prevClosingPrice, String unitsTraded24H, String accTradeValue24H, String fluctate24H, String fluctateRate24H, LocalDateTime createDate, LocalDateTime updateDate) {
+    private CoinDTO(Long id, String coinSymbol, String openingPrice, String closingPrice, String minPrice, String maxPrice, String unitsTraded, String accTradeValue, String prevClosingPrice, String unitsTraded24H, String accTradeValue24H, String fluctate24H, String fluctateRate24H, LocalDateTime createDate, LocalDateTime updateDate) {
         this.id = id;
+        this.coinSymbol = coinSymbol;
         this.openingPrice = openingPrice;
         this.closingPrice = closingPrice;
         this.minPrice = minPrice;

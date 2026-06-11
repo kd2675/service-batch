@@ -21,6 +21,9 @@ public class CoinEntity extends CommonDateEntity {
     @Column(name = "id")
     private Long id;
 
+    @Column(name = "coinSymbol", nullable = false, length = 20)
+    private String coinSymbol;
+
     @Column(name = "openingPrice", nullable = false, length = 255)
     private String openingPrice;
     @Column(name = "closingPrice", nullable = false, length = 255)

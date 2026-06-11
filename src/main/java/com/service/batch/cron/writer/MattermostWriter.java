@@ -19,8 +19,12 @@ import org.springframework.http.ResponseEntity;
 
 import java.text.NumberFormat;
 import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.LinkedList;
+import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 import java.util.Queue;
 
 @Slf4j
@@ -35,6 +39,12 @@ public class MattermostWriter {
     public static final String SEND_COIN_AND_SAVE_MATTERMOST_SENT = "sendCoinAndSaveMattermostSent";
     public static final String DEL_MATTERMOST_UTIL_BY_ID = "delMattermostUtilById";
     public static final String DEL_ALL_MATTERMOST_SENT = "delAllMattermostSent";
+    private static final List<String> COIN_SYMBOL_ORDER = List.of("BTC", "ETH", "XRP");
+    private static final Map<String, String> COIN_NAMES = Map.of(
+            "BTC", "비트코인",
+            "ETH", "이더리움",
+            "XRP", "리플"
+    );
 
     private final MattermostSentREP mattermostSentREP;
     private final MattermostUtil mattermostUtil;
@@ -247,7 +257,7 @@ public class MattermostWriter {
             CoinEntity remove = q.remove();
 
             content += "| " + dtf.format(remove.getCreateDate())
-                    + " | " + "비트코인"
+                    + " | " + getCoinDisplayName(remove)
                     + " | " + remove.getClosingPrice()
                     + " | " + remove.getMaxPrice()
                     + " | " + remove.getMinPrice()
@@ -292,13 +302,17 @@ public class MattermostWriter {
 //                .append(line);
 
 
-        Queue<CoinEntity> q = new LinkedList<>(entityList.getItems());
+        List<CoinEntity> coins = new ArrayList<>(entityList.getItems());
+        coins.sort(Comparator.comparingInt(this::getCoinOrder));
+        Queue<CoinEntity> q = new LinkedList<>(coins);
+        StringBuilder coinLine = new StringBuilder("| 코인");
         while (!q.isEmpty()) {
 //            String content = "";
             if (q.isEmpty()) {
                 break;
             }
             CoinEntity remove = q.remove();
+            coinLine.append(" | ").append(getCoinDisplayName(remove));
             line.append(" | ").append(dtfD.format(remove.getCreateDate()));
             line0.append("|:-:");
             line1.append(" | ").append(dtfT.format(remove.getCreateDate()));
@@ -325,21 +339,23 @@ public class MattermostWriter {
 //                    + " | " + remove.getAccTradeValue24H();
 //            content += " |\n";
         }
+        coinLine.append(" |\n");
         line.append(" |\n");
         line0.append(" |\n");
         line1.append(" |\n");
         line2.append(" |\n");
         line3.append(" |\n");
-        line4.append(" |\n ");
-        line5.append(" |\n ");
-        line6.append(" |\n ");
-        line7.append(" |\n ");
-        line8.append(" |\n ");
-        line9.append(" |\n ");
-        line10.append(" |\n ");
+        line4.append(" |\n");
+        line5.append(" |\n");
+        line6.append(" |\n");
+        line7.append(" |\n");
+        line8.append(" |\n");
+        line9.append(" |\n");
+        line10.append(" |\n");
 
-        result.append(line)
+        result.append(coinLine)
                 .append(line0)
+                .append(line)
                 .append(line1)
                 .append(line2)
                 .append(line3)
@@ -352,5 +368,24 @@ public class MattermostWriter {
                 .append(line10);
 
         return result.toString();
+    }
+
+    private int getCoinOrder(CoinEntity coinEntity) {
+        int index = COIN_SYMBOL_ORDER.indexOf(getCoinSymbol(coinEntity));
+        return index >= 0 ? index : Integer.MAX_VALUE;
+    }
+
+    private String getCoinDisplayName(CoinEntity coinEntity) {
+        String coinSymbol = getCoinSymbol(coinEntity);
+        String coinName = COIN_NAMES.getOrDefault(coinSymbol, coinSymbol);
+        return coinName + "(" + coinSymbol + ")";
+    }
+
+    private String getCoinSymbol(CoinEntity coinEntity) {
+        String coinSymbol = coinEntity.getCoinSymbol();
+        if (coinSymbol == null || coinSymbol.isBlank()) {
+            return "BTC";
+        }
+        return coinSymbol.toUpperCase(Locale.ROOT);
     }
 }

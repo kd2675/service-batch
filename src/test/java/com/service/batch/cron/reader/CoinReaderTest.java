@@ -81,8 +81,8 @@ class CoinReaderTest {
     @DisplayName("findTop1ByOrderByIdDesc ListItemReader가 정상적으로 생성되는지 테스트")
     void findTop1ByOrderByIdDesc_ShouldBeCreatedSuccessfully() throws Exception {
         // Given
-        List<CoinEntity> mockCoins = createMockCoinEntities(1);
-        when(coinREP.findTop1ByOrderByIdDesc()).thenReturn(mockCoins);
+        List<CoinEntity> mockCoins = createMockCoinEntities(3);
+        when(coinREP.findLatestByCoinSymbolIn(anyCollection())).thenReturn(mockCoins);
 
         // When
         ListItemReader<CoinEntity> reader = coinReader.findTop1ByOrderByIdDesc(entityManagerFactory);
@@ -93,7 +93,7 @@ class CoinReaderTest {
         assertThat(firstItem).isNotNull();
         
         // Repository 메서드가 호출되었는지 검증
-        verify(coinREP, times(1)).findTop1ByOrderByIdDesc();
+        verify(coinREP, times(1)).findLatestByCoinSymbolIn(anyCollection());
     }
 
     @Test
@@ -156,7 +156,7 @@ class CoinReaderTest {
     @DisplayName("findTop1ByOrderByIdDesc에서 빈 리스트 반환 시 정상 동작 테스트")
     void findTop1ByOrderByIdDesc_WithEmptyList_ShouldHandleGracefully() throws Exception {
         // Given
-        when(coinREP.findTop1ByOrderByIdDesc()).thenReturn(Arrays.asList());
+        when(coinREP.findLatestByCoinSymbolIn(anyCollection())).thenReturn(Arrays.asList());
 
         // When
         ListItemReader<CoinEntity> reader = coinReader.findTop1ByOrderByIdDesc(entityManagerFactory);
@@ -172,7 +172,7 @@ class CoinReaderTest {
         // Given
         List<CoinEntity> mockCoins = createMockCoinEntities(5);
         when(coinREP.findTop10ByOrderByIdDesc()).thenReturn(mockCoins);
-        when(coinREP.findTop1ByOrderByIdDesc()).thenReturn(mockCoins);
+        when(coinREP.findLatestByCoinSymbolIn(anyCollection())).thenReturn(mockCoins);
 
         // When
         JpaPagingItemReader<CoinEntity> jpaPagingReader1 = coinReader.jpaPagingItemReader(entityManagerFactory);
@@ -192,7 +192,7 @@ class CoinReaderTest {
         // Given
         List<CoinEntity> mockCoins = createMockCoinEntities(5);
         when(coinREP.findTop10ByOrderByIdDesc()).thenReturn(mockCoins);
-        when(coinREP.findTop1ByOrderByIdDesc()).thenReturn(mockCoins);
+        when(coinREP.findLatestByCoinSymbolIn(anyCollection())).thenReturn(mockCoins);
 
         // When
         coinReader.findTop10ByOrderByIdDesc(entityManagerFactory);
@@ -201,7 +201,7 @@ class CoinReaderTest {
 
         // Then
         verify(coinREP, times(2)).findTop10ByOrderByIdDesc();
-        verify(coinREP, times(1)).findTop1ByOrderByIdDesc();
+        verify(coinREP, times(1)).findLatestByCoinSymbolIn(anyCollection());
     }
 
     @Test
@@ -209,7 +209,7 @@ class CoinReaderTest {
     void allReaderMethods_ShouldReturnNonNullReaders() {
         // Given
         when(coinREP.findTop10ByOrderByIdDesc()).thenReturn(createMockCoinEntities(1));
-        when(coinREP.findTop1ByOrderByIdDesc()).thenReturn(createMockCoinEntities(1));
+        when(coinREP.findLatestByCoinSymbolIn(anyCollection())).thenReturn(createMockCoinEntities(3));
 
         // When
         JpaPagingItemReader<CoinEntity> jpaPagingReader = coinReader.jpaPagingItemReader(entityManagerFactory);
@@ -232,7 +232,7 @@ class CoinReaderTest {
         assertThat(reader).isNotNull();
         
         // Reader가 정상적으로 동작하는지 확인
-        when(coinREP.findTop1ByOrderByIdDesc()).thenReturn(createMockCoinEntities(1));
+        when(coinREP.findLatestByCoinSymbolIn(anyCollection())).thenReturn(createMockCoinEntities(3));
         ListItemReader<CoinEntity> itemReader = reader.findTop1ByOrderByIdDesc(entityManagerFactory);
         assertThat(itemReader).isNotNull();
     }

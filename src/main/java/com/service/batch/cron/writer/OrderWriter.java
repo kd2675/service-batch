@@ -22,6 +22,7 @@ import org.springframework.context.annotation.Configuration;
 
 import java.math.BigDecimal;
 import java.util.Collections;
+import java.util.Locale;
 
 @RequiredArgsConstructor
 @Configuration
@@ -39,9 +40,6 @@ public class OrderWriter {
     @Bean(name = COMPLETE_ORDER_TO_MARKET)
     @StepScope
     public BasicWriter<OrderEntity> orderEntityBasicWriter() {
-
-        CoinEntity coinEntity = coinREP.findTopByOrderByIdDesc();
-
         return new BasicWriter<OrderEntity>() {
             @Override
             public void write(Chunk<? extends OrderEntity> chunk) throws Exception {
@@ -55,6 +53,11 @@ public class OrderWriter {
                             orderEntity.getCnt(),
                             orderEntity.getPrice()
                     );
+
+                    CoinEntity coinEntity = coinREP.findTopByCoinSymbolOrderByIdDesc(normalizeCoinSymbol(insMarketDTO.getCoinSlct()));
+                    if (coinEntity == null) {
+                        throw new IllegalStateException("Coin price not found: " + insMarketDTO.getCoinSlct());
+                    }
 
                     double coinPrice = Double.parseDouble(coinEntity.getClosingPrice());
 
@@ -89,6 +92,13 @@ public class OrderWriter {
                 }
             }
         };
+    }
+
+    private String normalizeCoinSymbol(String coinSymbol) {
+        if (coinSymbol == null || coinSymbol.isBlank()) {
+            return "BTC";
+        }
+        return coinSymbol.toUpperCase(Locale.ROOT);
     }
 
     @Bean(name = DEL_ORDER)
