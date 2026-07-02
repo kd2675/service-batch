@@ -1,3 +1,5 @@
+use CRAWLING;
+
 ALTER TABLE CoinEntity
     ADD COLUMN coinSymbol varchar(20) NOT NULL DEFAULT 'BTC' AFTER id;
 

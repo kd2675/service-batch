@@ -7,6 +7,8 @@ import org.example.core.request.BatchExecuteRequest;
 import org.example.core.request.BatchServiceRequest;
 import org.example.core.response.base.dto.ResponseDTO;
 import org.example.core.response.base.vo.Code;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
@@ -18,55 +20,64 @@ import org.springframework.web.bind.annotation.RestController;
 public class BatchApiController {
     private final BatchApiService batchApiService;
 
-    @RequestMapping("/gateway/executeAsync")
-    public ResponseDTO executeAsync(@RequestBody BatchExecuteRequest request) {
+    @PostMapping("/gateway/executeAsync")
+    public ResponseEntity<ResponseDTO> executeAsync(@RequestBody BatchExecuteRequest request) {
         try {
+            batchApiService.validateExecuteRequest(request);
             batchApiService.executeAsync(request);
 
-            return ResponseDTO.of(true, Code.OK_ASYNC);
+            return response(true, Code.OK_ASYNC);
         } catch (Exception e) {
             log.error("BatchApiController execute error", e);
         }
 
-        return ResponseDTO.of(false, Code.BAD_REQUEST);
+        return response(false, Code.BAD_REQUEST);
     }
 
-    @RequestMapping("/gateway/execute")
-    public ResponseDTO execute(@RequestBody BatchExecuteRequest request) {
+    @PostMapping("/gateway/execute")
+    public ResponseEntity<ResponseDTO> execute(@RequestBody BatchExecuteRequest request) {
         try {
+            batchApiService.validateExecuteRequest(request);
             batchApiService.execute(request);
 
-            return ResponseDTO.of(true, Code.OK_ASYNC);
+            return response(true, Code.OK_ASYNC);
         } catch (Exception e) {
             log.error("BatchApiController execute error", e);
         }
 
-        return ResponseDTO.of(false, Code.BAD_REQUEST);
+        return response(false, Code.BAD_REQUEST);
     }
 
-    @RequestMapping("/gateway/serviceAsync")
-    public ResponseDTO serviceAsync(@RequestBody BatchServiceRequest request) {
+    @PostMapping("/gateway/serviceAsync")
+    public ResponseEntity<ResponseDTO> serviceAsync(@RequestBody BatchServiceRequest request) {
         try {
+            batchApiService.validateServiceRequest(request);
             batchApiService.serviceAsync(request);
 
-            return ResponseDTO.of(true, Code.OK_ASYNC);
+            return response(true, Code.OK_ASYNC);
         } catch (Exception e) {
             log.error("BatchApiController execute error", e);
         }
 
-        return ResponseDTO.of(false, Code.BAD_REQUEST);
+        return response(false, Code.BAD_REQUEST);
     }
 
-    @RequestMapping("/gateway/service")
-    public ResponseDTO service(@RequestBody BatchServiceRequest request) {
+    @PostMapping("/gateway/service")
+    public ResponseEntity<ResponseDTO> service(@RequestBody BatchServiceRequest request) {
         try {
+            batchApiService.validateServiceRequest(request);
             batchApiService.service(request);
 
-            return ResponseDTO.of(true, Code.OK_ASYNC);
+            return response(true, Code.OK_ASYNC);
         } catch (Exception e) {
             log.error("BatchApiController execute error", e);
         }
 
-        return ResponseDTO.of(false, Code.BAD_REQUEST);
+        return response(false, Code.BAD_REQUEST);
+    }
+
+    private ResponseEntity<ResponseDTO> response(boolean success, Code code) {
+        return ResponseEntity.status(code.getHttpStatus())
+                .body(ResponseDTO.of(success, code));
     }
 }

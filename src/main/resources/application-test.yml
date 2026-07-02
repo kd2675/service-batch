@@ -3,6 +3,8 @@ server:
 
 spring:
   cloud:
+    discovery:
+      enabled: false
     config:
       enabled: false
   config:
@@ -23,3 +25,9 @@ spring:
   test:
     database:
       replace: any
+
+eureka:
+  client:
+    enabled: false
+    register-with-eureka: false
+    fetch-registry: false

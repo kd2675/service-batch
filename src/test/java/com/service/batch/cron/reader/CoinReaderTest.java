@@ -8,12 +8,14 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.batch.item.database.JpaPagingItemReader;
 import org.springframework.batch.item.support.ListItemReader;
 
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -79,6 +81,7 @@ class CoinReaderTest {
 
     @Test
     @DisplayName("findTop1ByOrderByIdDesc ListItemReader가 정상적으로 생성되는지 테스트")
+    @SuppressWarnings("unchecked")
     void findTop1ByOrderByIdDesc_ShouldBeCreatedSuccessfully() throws Exception {
         // Given
         List<CoinEntity> mockCoins = createMockCoinEntities(3);
@@ -93,7 +96,9 @@ class CoinReaderTest {
         assertThat(firstItem).isNotNull();
         
         // Repository 메서드가 호출되었는지 검증
-        verify(coinREP, times(1)).findLatestByCoinSymbolIn(anyCollection());
+        ArgumentCaptor<Collection<String>> coinSymbolsCaptor = ArgumentCaptor.forClass(Collection.class);
+        verify(coinREP, times(1)).findLatestByCoinSymbolIn(coinSymbolsCaptor.capture());
+        assertThat(coinSymbolsCaptor.getValue()).containsExactly("BTC", "ETH", "XRP");
     }
 
     @Test

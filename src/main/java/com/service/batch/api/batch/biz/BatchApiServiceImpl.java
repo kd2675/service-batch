@@ -21,11 +21,25 @@ import org.springframework.batch.core.repository.JobInstanceAlreadyCompleteExcep
 import org.springframework.batch.core.repository.JobRestartException;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
+import org.springframework.util.StringUtils;
+
+import java.util.Map;
+import java.util.Set;
 
 @Service
 @RequiredArgsConstructor
 @Slf4j
 public class BatchApiServiceImpl implements BatchApiService{
+    private static final Set<String> SERVICE_JOB_TYPES = Set.of(
+            "account",
+            "check",
+            "buy",
+            "reset",
+            "saveCoinDataBTC",
+            "logCacheStats",
+            "beforeCheckJangsung"
+    );
+
     private final JobLauncher jobLauncher;
     private final JobRegistry jobRegistry;
 
@@ -34,6 +48,26 @@ public class BatchApiServiceImpl implements BatchApiService{
     private final InsCoinService insCoinService;
     private final StockService stockService;
     private final ReserveSportSVC reserveSportSVC;
+
+    @Override
+    public void validateExecuteRequest(BatchExecuteRequest request) throws NoSuchJobException {
+        if (request == null || !StringUtils.hasText(request.getJobType())) {
+            throw new IllegalArgumentException("jobType is required");
+        }
+
+        jobRegistry.getJob(request.getJobType());
+    }
+
+    @Override
+    public void validateServiceRequest(BatchServiceRequest request) {
+        if (request == null || !StringUtils.hasText(request.getJobType())) {
+            throw new IllegalArgumentException("jobType is required");
+        }
+
+        if (!SERVICE_JOB_TYPES.contains(request.getJobType())) {
+            throw new IllegalArgumentException("Unsupported service jobType: " + request.getJobType());
+        }
+    }
 
     @Override
     @Async("asyncTaskExecutor")
@@ -47,7 +81,8 @@ public class BatchApiServiceImpl implements BatchApiService{
     }
 
     private void setExecute(BatchExecuteRequest request) throws JobExecutionAlreadyRunningException, JobRestartException, JobInstanceAlreadyCompleteException, JobParametersInvalidException, NoSuchJobException {
-        System.out.println(request);
+        validateExecuteRequest(request);
+        log.info("Batch execute request: {}", request);
 
         jobLauncher.run(jobRegistry.getJob(request.getJobType()), getJobParameters());
     }
@@ -64,7 +99,8 @@ public class BatchApiServiceImpl implements BatchApiService{
     }
 
     private void setService(BatchServiceRequest request) {
-        System.out.println(request);
+        validateServiceRequest(request);
+        log.info("Batch service request: {}", request);
 
         switch (request.getJobType()) {
             case "account" -> lottoService.account();
@@ -74,12 +110,20 @@ public class BatchApiServiceImpl implements BatchApiService{
             case "saveCoinDataBTC" -> insCoinService.saveCoinDataBTC();
             case "logCacheStats" -> stockService.logCacheStats();
             case "beforeCheckJangsung" -> reserveSportSVC.beforeCheckJangsung(
-                    request.getParameters().get("year").toString(),
-                    request.getParameters().get("month").toString(),
-                    request.getParameters().get("day").toString(),
-                    request.getParameters().get("st").toString()
+                    requiredParameter(request.getParameters(), "year"),
+                    requiredParameter(request.getParameters(), "month"),
+                    requiredParameter(request.getParameters(), "day"),
+                    requiredParameter(request.getParameters(), "st")
             );
+            default -> throw new IllegalArgumentException("Unsupported service jobType: " + request.getJobType());
         }
+    }
+
+    private String requiredParameter(Map<String, Object> parameters, String name) {
+        if (parameters == null || parameters.get(name) == null) {
+            throw new IllegalArgumentException("Missing service parameter: " + name);
+        }
+        return parameters.get(name).toString();
     }
 
     private static JobParameters getJobParameters() {
