@@ -2,7 +2,6 @@ package com.service.batch.service.lotto.biz;
 
 import com.service.batch.service.webhook.api.dto.WebhookDTO;
 import com.service.batch.utils.MattermostUtil;
-import com.service.batch.utils.enums.ChannelEnum;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.openqa.selenium.*;
@@ -11,12 +10,11 @@ import org.openqa.selenium.chrome.ChromeOptions;
 import org.openqa.selenium.support.ui.ExpectedConditions;
 import org.openqa.selenium.support.ui.Select;
 import org.openqa.selenium.support.ui.WebDriverWait;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
+import org.springframework.util.StringUtils;
 
-import java.time.DayOfWeek;
 import java.time.Duration;
-import java.time.LocalDate;
-import java.time.format.DateTimeFormatter;
 import java.util.*;
 import java.util.NoSuchElementException;
 import java.util.regex.Matcher;
@@ -28,17 +26,15 @@ import java.util.regex.Pattern;
 public class LottoServiceImpl implements LottoService {
     private final MattermostUtil mattermostUtil;
 
+    @Value("${lotto.username:}")
+    private String lottoUsername;
+
+    @Value("${lotto.password:}")
+    private String lottoPassword;
+
     @Override
     public void account() {
-        ChromeOptions options = new ChromeOptions();
-        options.addArguments("--headless");
-        options.addArguments("--no-sandbox");
-        options.addArguments("--single-process");
-        options.addArguments("--disable-dev-shm-usage");
-        options.addArguments("--start-maximized");
-//        InternetExplorerOptions options = new InternetExplorerOptions();
-//        options.setCapability("ignoreProtectedModeSettings", true);
-        WebDriver driver = new ChromeDriver(options);
+        WebDriver driver = createWebDriver();
         WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(10));
 
         try {
@@ -46,7 +42,8 @@ public class LottoServiceImpl implements LottoService {
 
             account(driver, wait);
         } catch (Exception e) {
-            log.error("error > {}", e);
+            log.error("예치금 조회 실패", e);
+            throw asRuntimeException("예치금 조회 실패", e);
         } finally {
             driver.quit();
         }
@@ -54,15 +51,7 @@ public class LottoServiceImpl implements LottoService {
 
     @Override
     public void buy() {
-        ChromeOptions options = new ChromeOptions();
-        options.addArguments("--headless");
-        options.addArguments("--no-sandbox");
-        options.addArguments("--single-process");
-        options.addArguments("--disable-dev-shm-usage");
-        options.addArguments("--start-maximized");
-//        InternetExplorerOptions options = new InternetExplorerOptions();
-//        options.setCapability("ignoreProtectedModeSettings", true);
-        WebDriver driver = new ChromeDriver(options);
+        WebDriver driver = createWebDriver();
         WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(10));
 
         try {
@@ -74,7 +63,8 @@ public class LottoServiceImpl implements LottoService {
 
             buy(driver, wait);
         } catch (Exception e) {
-            log.error("error > {}", e);
+            log.error("로또 구매 실패", e);
+            throw asRuntimeException("로또 구매 실패", e);
         } finally {
             driver.quit();
         }
@@ -82,14 +72,7 @@ public class LottoServiceImpl implements LottoService {
 
     @Override
     public void check() {
-        ChromeOptions options = new ChromeOptions();
-        options.addArguments("--headless");
-        options.addArguments("--no-sandbox");
-        options.addArguments("--single-process");
-        options.addArguments("--disable-dev-shm-usage");
-        options.addArguments("--start-maximized");
-
-        WebDriver driver = new ChromeDriver(options);
+        WebDriver driver = createWebDriver();
         WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(10));
 
         try {
@@ -98,38 +81,30 @@ public class LottoServiceImpl implements LottoService {
             login(driver, wait);
             log.info("✅ [DEBUG] 로그인 완료");
 
-            List<List<String>> result = result(driver, wait);
-            log.info("✅ [DEBUG] 구매 내역 조회 완료: {}개", result.size());
-
             List<String> lucky = lucky(driver, wait);
             log.info("✅ [DEBUG] 당첨 번호 조회 완료: {}", lucky);
+            if (lucky.size() != 7) {
+                throw new IllegalStateException("최신 당첨 번호 7개를 가져오지 못했습니다.");
+            }
+
+            int winningRound = extractWinningRound(driver);
+            List<List<String>> result = result(driver, wait, winningRound);
+            log.info("✅ [DEBUG] {}회 구매 내역 조회 완료: {}개", winningRound, result.size());
 
             this.checkWinning(result, lucky);
             log.info("✅ [DEBUG] check() 완료");
 
         } catch (Exception e) {
             log.error("❌ [DEBUG] check() 에러: {}", e.getMessage(), e);
+            throw asRuntimeException("당첨 확인 실패", e);
         } finally {
-            log.info("⏸️ [DEBUG] 브라우저 종료 대기 (10초)...");
-            try {
-                Thread.sleep(10000); // 10초 대기
-            } catch (InterruptedException e) {
-                e.printStackTrace();
-            }
             driver.quit();
         }
     }
 
     @Override
     public void checkBob(WebhookDTO webhookDTO) {
-        ChromeOptions options = new ChromeOptions();
-        options.addArguments("--headless");
-        options.addArguments("--no-sandbox");
-        options.addArguments("--single-process");
-        options.addArguments("--disable-dev-shm-usage");
-        options.addArguments("--start-maximized");
-
-        WebDriver driver = new ChromeDriver(options);
+        WebDriver driver = createWebDriver();
         WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(10));
 
         try {
@@ -138,51 +113,62 @@ public class LottoServiceImpl implements LottoService {
             login(driver, wait);
             log.info("✅ [DEBUG] 로그인 완료");
 
-            List<List<String>> result = result(driver, wait);
-            log.info("✅ [DEBUG] 구매 내역 조회 완료: {}개", result.size());
-
             List<String> lucky = lucky(driver, wait);
             log.info("✅ [DEBUG] 당첨 번호 조회 완료: {}", lucky);
+            if (lucky.size() != 7) {
+                throw new IllegalStateException("최신 당첨 번호 7개를 가져오지 못했습니다.");
+            }
+
+            int winningRound = extractWinningRound(driver);
+            List<List<String>> result = result(driver, wait, winningRound);
+            log.info("✅ [DEBUG] {}회 구매 내역 조회 완료: {}개", winningRound, result.size());
 
             this.checkWinningWebhook(result, lucky, webhookDTO);
             log.info("✅ [DEBUG] check() 완료");
 
         } catch (Exception e) {
             log.error("❌ [DEBUG] check() 에러: {}", e.getMessage(), e);
+            throw asRuntimeException("Webhook 당첨 확인 실패", e);
         } finally {
-            log.info("⏸️ [DEBUG] 브라우저 종료 대기 (10초)...");
-            try {
-                Thread.sleep(10000); // 10초 대기
-            } catch (InterruptedException e) {
-                e.printStackTrace();
-            }
             driver.quit();
         }
     }
 
+    WebDriver createWebDriver() {
+        ChromeOptions options = new ChromeOptions();
+        options.addArguments("--headless");
+        options.addArguments("--no-sandbox");
+        options.addArguments("--disable-dev-shm-usage");
+        options.addArguments("--window-size=1920,1080");
+        return new ChromeDriver(options);
+    }
+
 
     private void login(WebDriver driver, WebDriverWait wait) {
+        if (!StringUtils.hasText(lottoUsername) || !StringUtils.hasText(lottoPassword)) {
+            throw new IllegalStateException("LOTTO_USERNAME and LOTTO_PASSWORD must be configured");
+        }
+
         driver.get("https://www.dhlottery.co.kr");
         driver.navigate().to("https://www.dhlottery.co.kr/login");
 
         // 1. 아이디 입력
         WebElement idElement = wait.until(ExpectedConditions.presenceOfElementLocated(By.id("inpUserId")));
-        idElement.sendKeys("kd2675");
+        idElement.sendKeys(lottoUsername);
 
         // 2. 비밀번호 입력
         WebElement pwElement = wait.until(ExpectedConditions.presenceOfElementLocated(By.id("inpUserPswdEncn")));
-        pwElement.sendKeys("Whitered2@");
+        pwElement.sendKeys(lottoPassword);
 
         // 3. 로그인 버튼 클릭
         WebElement loginButton = wait.until(ExpectedConditions.elementToBeClickable(By.id("btnLogin")));
         loginButton.click();
 
-        // 4. 로그인 완료 대기
-        try {
-            Thread.sleep(4000);
-        } catch (InterruptedException e) {
-            throw new RuntimeException(e);
-        }
+        // 4. 로그인 완료 대기 및 성공 여부 확인
+        wait.until(ExpectedConditions.or(
+                ExpectedConditions.urlContains("/main"),
+                ExpectedConditions.presenceOfElementLocated(By.linkText("로그아웃"))
+        ));
     }
 
     private void account(WebDriver driver, WebDriverWait wait) {
@@ -220,30 +206,9 @@ public class LottoServiceImpl implements LottoService {
             driver.get("https://www.dhlottery.co.kr/main");
             Thread.sleep(5000);  // 페이지 완전 로딩 대기
 
-            // 2️⃣ JavaScript 함수가 로드될 때까지 대기
-            log.info("⏳ gmUtil 함수 로딩 대기 중...");
-            wait.until(driver1 -> {
-                try {
-                    Object result = js.executeScript("return typeof gmUtil !== 'undefined' && typeof gmUtil.goGameClsf === 'function';");
-                    return Boolean.TRUE.equals(result);
-                } catch (Exception e) {
-                    return false;
-                }
-            });
-            log.info("✅ gmUtil 함수 로드 완료!");
-
-            // 3️⃣ 직접 JavaScript 함수 호출로 구매 페이지 이동
+            // 2️⃣ 현재 페이지의 로또6/45 바로구매 버튼으로 구매 페이지 이동
             log.info("🎯 로또645 구매 페이지로 이동 중...");
-            try {
-                // 방법 1: gmUtil.goGameClsf 직접 호출
-                js.executeScript("gmUtil.goGameClsf('LO40','PRCHS');");
-                log.info("✅ JavaScript 함수 호출 성공!");
-            } catch (Exception e) {
-                log.warn("⚠️ gmUtil 함수 호출 실패, 버튼 클릭 방식 시도: {}", e.getMessage());
-
-                // 방법 2: 버튼 클릭 시도
-                WebElement buyButton = findAndClickLt645Button(driver, wait, js);
-            }
+            findAndClickLt645Button(driver, wait, js);
 
             // 4️⃣ 게임 페이지 로드 대기 (새 창이 열릴 수 있음)
             log.info("🔄 게임 페이지 로드 대기 중...");
@@ -323,7 +288,7 @@ public class LottoServiceImpl implements LottoService {
 
         // 3. 다양한 선택자로 버튼 찾기 시도
         String[] selectors = {
-                ".swiper-slide-active .btnBuyLt645",           // 활성 슬라이드의 버튼 (가장 확률 높음)
+                ".lt645-inbox.swiper-slide-active .btnBuyLt645", // 최신 로또6/45 슬라이드 버튼
                 ".lt645-inbox .btnBuyLt645",                   // 로또645 영역 내의 버튼
                 "button.btnBuyLt645",                          // 일반 버튼
                 "#btnMoLtgmPrchs",                             // 모바일 바로구매 버튼
@@ -422,6 +387,13 @@ public class LottoServiceImpl implements LottoService {
         Thread.sleep(3000);
         log.info("🎯 버튼 클릭 완료, 페이지 전환 대기 중...");
         return buyButton;
+    }
+
+    private RuntimeException asRuntimeException(String message, Exception cause) {
+        if (cause instanceof RuntimeException runtimeException) {
+            return runtimeException;
+        }
+        return new RuntimeException(message, cause);
     }
 
     /**
@@ -628,69 +600,29 @@ public class LottoServiceImpl implements LottoService {
             throw new RuntimeException("구매하기 버튼을 찾을 수 없습니다", e);
         }
 
-        // 5. Alert 처리
-        log.info("5️⃣ Alert 확인 중...");
+        // 5. 구매 확인 레이어에서 실제 구매 확정
+        log.info("5️⃣ 구매 확인 팝업 처리...");
         try {
-            Alert alert = wait.until(ExpectedConditions.alertIsPresent());
-            String alertText = alert.getText();
-            log.info("📢 Alert: {}", alertText);
-            alert.accept();
-            Thread.sleep(1000);
-            log.info("✅ Alert 확인 완료!");
+            WebElement finalConfirmBtn = wait.until(ExpectedConditions.elementToBeClickable(
+                    By.xpath("//*[@id='popupLayerConfirm']//input[@value='확인']")));
+            js.executeScript("arguments[0].click();", finalConfirmBtn);
+            log.info("✅ 구매 확인 완료!");
         } catch (Exception e) {
-            log.info("ℹ️ Alert 없음");
+            throw new RuntimeException("구매 확인 팝업을 처리할 수 없습니다", e);
         }
 
-        // 6. 최종 실행 버튼 클릭 (있는 경우만)
-        log.info("6️⃣ 최종 실행 버튼 찾기...");
+        // 6. 구매 영수증이 표시되어야만 성공으로 판정
+        log.info("6️⃣ 구매 완료 영수증 확인...");
         try {
-            WebElement execBtn = driver.findElement(By.id("execBuy"));
-            if (execBtn.isDisplayed()) {
-                js.executeScript("arguments[0].click();", execBtn);
-                Thread.sleep(2000);
-                log.info("✅ 최종 실행 완료!");
+            WebElement receipt = wait.until(ExpectedConditions.visibilityOfElementLocated(By.id("popReceipt")));
+            if (!receipt.getText().contains("구매내역 확인")) {
+                throw new IllegalStateException("구매 완료 영수증 내용을 확인할 수 없습니다");
             }
+            WebElement closeLayer = wait.until(ExpectedConditions.elementToBeClickable(By.id("closeLayer")));
+            js.executeScript("arguments[0].click();", closeLayer);
+            log.info("✅ 구매 완료 영수증 확인 및 닫기 완료!");
         } catch (Exception e) {
-            log.info("ℹ️ 최종 실행 버튼 없음 (이미 구매가 완료되었을 수 있음)");
-        }
-
-        // 7. 최종 확인 팝업 처리 (있는 경우만)
-        log.info("7️⃣ 최종 확인 팝업 처리...");
-        try {
-            WebElement finalConfirmBtn = driver.findElement(
-                    By.xpath("//*[@id='popupLayerConfirm']//input[@value='확인']"));
-            if (finalConfirmBtn.isDisplayed()) {
-                js.executeScript("arguments[0].click();", finalConfirmBtn);
-                Thread.sleep(2000);
-                log.info("✅ 최종 확인 완료!");
-            }
-        } catch (Exception e) {
-            log.info("ℹ️ 최종 확인 팝업 없음");
-        }
-
-        // 8. 추천 팝업 확인 (있는 경우만)
-        log.info("8️⃣ 추천 팝업 확인 중...");
-        try {
-            WebElement recommendPopup = driver.findElement(By.id("recommend720Plus"));
-            if (isElementDisplayed(recommendPopup)) {
-                log.info("ℹ️ 추천 팝업이 표시 중입니다");
-                Thread.sleep(1000);
-            }
-        } catch (Exception e) {
-            log.info("ℹ️ 추천 팝업 없음");
-        }
-
-        // 9. 레이어 닫기 (있는 경우만)
-        log.info("9️⃣ 페이지 닫기...");
-        try {
-            WebElement closeLayer = driver.findElement(By.id("closeLayer"));
-            if (closeLayer.isDisplayed()) {
-                js.executeScript("arguments[0].click();", closeLayer);
-                Thread.sleep(1000);
-                log.info("✅ 페이지 닫기 완료!");
-            }
-        } catch (Exception e) {
-            log.info("ℹ️ 닫기 버튼 없음");
+            throw new RuntimeException("구매 완료 영수증을 확인할 수 없습니다", e);
         }
 
         log.info("✨ game645 구매 프로세스 완료!");
@@ -773,7 +705,7 @@ public class LottoServiceImpl implements LottoService {
 //        js.executeScript("arguments[0].click();", closeLayerBtn);
 
 //        mattermostUtil.send("구매 완료", "5zqu88zsef83x8kj86igsqe1wa");
-    private List<List<String>> result(WebDriver driver, WebDriverWait wait) {
+    private List<List<String>> result(WebDriver driver, WebDriverWait wait, int winningRound) {
         List<List<String>> result = new ArrayList<>();
         JavascriptExecutor js = (JavascriptExecutor) driver;
 
@@ -812,7 +744,7 @@ public class LottoServiceImpl implements LottoService {
             log.info("📅 조회 기간 설정 중...");
             try {
                 WebElement weekButton = wait.until(ExpectedConditions.presenceOfElementLocated(
-                        By.xpath("//button[contains(@class, 'btChgDt') and contains(text(), '최근 1주일')]")));
+                        By.xpath("//button[contains(@class, 'btChgDt') and normalize-space()='1주일']")));
                 js.executeScript("arguments[0].scrollIntoView({block: 'center'});", weekButton);
                 Thread.sleep(500);
                 js.executeScript("arguments[0].click();", weekButton);
@@ -836,7 +768,7 @@ public class LottoServiceImpl implements LottoService {
             // 4. 구매 내역 데이터 확인
             log.info("📋 구매 내역 테이블 확인...");
             try {
-                List<WebElement> purchaseRows = driver.findElements(By.cssSelector(".whl-body tr, .lotto-ledger-item"));
+                List<WebElement> purchaseRows = driver.findElements(By.cssSelector(".whl-body > .whl-row, .lotto-ledger-item"));
                 log.info("📊 구매 내역 행 발견: {}개", purchaseRows.size());
 
                 if (!purchaseRows.isEmpty()) {
@@ -846,22 +778,12 @@ public class LottoServiceImpl implements LottoService {
                 log.warn("⚠️ 구매 내역 확인 실패: {}", e.getMessage());
             }
 
-            // 5. 바코드 요소 찾기 및 클릭 (재시도 로직)
-            log.info("🎫 바코드 클릭 시도 중...");
-            WebElement barcodeElement = findBarcodeElement(driver, wait, js);
-
-            if (barcodeElement == null) {
-                log.error("❌ 바코드 요소를 찾을 수 없습니다");
-                // 폴백: 번호가 이미 테이블에 표시되어 있을 가능성
-                log.info("📋 폴백: 페이지의 모든 숫자 추출 시도...");
-                result = tryExtractFromVisiblePage(driver);
-
-                if (!result.isEmpty()) {
-                    log.info("✅ 폴백 성공: {}개 티켓 추출", result.size());
-                    return result;
-                }
-
-            }
+            // 5. 최신 당첨 회차와 정확히 일치하는 구매 행의 바코드만 선택
+            log.info("🎫 {}회 구매 바코드 클릭 시도 중...", winningRound);
+            List<WebElement> purchaseRows = wait.until(
+                    ExpectedConditions.presenceOfAllElementsLocatedBy(By.cssSelector(".whl-body > .whl-row")));
+            WebElement purchaseRow = findPurchaseRowForRound(purchaseRows, winningRound);
+            WebElement barcodeElement = purchaseRow.findElement(By.cssSelector(".barcd"));
 
             // 바코드 클릭 전에 스크린샷 로그
             log.info("📸 바코드 클릭 전 페이지 상태 확인...");
@@ -880,8 +802,7 @@ public class LottoServiceImpl implements LottoService {
                 Thread.sleep(4000);
                 log.info("✅ 바코드 클릭 완료");
             } catch (Exception e) {
-                log.warn("⚠️ 바코드 클릭 실패: {}", e.getMessage());
-                // 클릭 실패해도 계속 진행
+                throw new ResultError("바코드 클릭에 실패했습니다.", e);
             }
 
             // 6. 팝업에서 번호 추출 (여러 방식 시도)
@@ -895,18 +816,14 @@ public class LottoServiceImpl implements LottoService {
             log.info("✅ 번호 추출 완료: {}개 게임", result.size());
 
             if (result.isEmpty()) {
-                log.warn("⚠️ 추출된 번호가 없습니다. 페이지 소스 분석...");
-                result = tryExtractFromPageSource(driver);
-            }
-
-            if (result.isEmpty()) {
+                throw new ResultError();
             }
 
         } catch (ResultError e) {
             throw e;
         } catch (Exception e) {
             log.error("❌ 구매 내역 조회 실패: {}", e.getMessage(), e);
-            mattermostUtil.send("❌ 구매 내역 조회 실패: " + e.getMessage(), "5zqu88zsef83x8kj86igsqe1wa");
+            throw new ResultError("구매 내역 조회 실패: " + e.getMessage(), e);
         }
 
         return result;
@@ -1047,43 +964,20 @@ public class LottoServiceImpl implements LottoService {
         return result;
     }
 
-    /**
-     * 바코드 요소 찾기 (재시도 로직)
-     */
-    private WebElement findBarcodeElement(WebDriver driver, WebDriverWait wait, JavascriptExecutor js) {
-        String[] barcodeSelectors = {
-                ".whl-body .barcd",           // 기존 선택자
-                "a[title*='바코드']",          // 바코드 버튼
-                ".whl-list .barcd",           // 다른 경로
-                "[onclick*='popupBarcode']",  // JavaScript 이벤트 기반
-                ".lotto-barcode",             // 대체 클래스명
-                "button.barcode-btn"          // 버튼 형식
-        };
-
-        for (int i = 0; i < barcodeSelectors.length; i++) {
+    WebElement findPurchaseRowForRound(List<WebElement> purchaseRows, int winningRound) {
+        for (WebElement row : purchaseRows) {
             try {
-                log.info("🔍 바코드 선택자 시도 {}/{}: {}", i + 1, barcodeSelectors.length, barcodeSelectors[i]);
-
-                WebElement element;
-                if (barcodeSelectors[i].startsWith("[")) {
-                    element = wait.until(ExpectedConditions.presenceOfElementLocated(
-                            By.cssSelector(barcodeSelectors[i])));
-                } else {
-                    element = wait.until(ExpectedConditions.presenceOfElementLocated(
-                            By.cssSelector(barcodeSelectors[i])));
-                }
-
-                if (element.isDisplayed() || isElementInViewport(driver, element)) {
-                    log.info("✅ 바코드 요소 발견: {}", barcodeSelectors[i]);
-                    return element;
+                String product = row.findElement(By.cssSelector(".col-name")).getText().trim();
+                String round = row.findElement(By.cssSelector(".col-th")).getText().replaceAll("[^0-9]", "");
+                if (product.contains("로또6/45") && Integer.toString(winningRound).equals(round)) {
+                    return row;
                 }
             } catch (Exception e) {
-                log.debug("❌ 선택자 {} 실패", barcodeSelectors[i]);
+                log.debug("구매 내역 행 분석 실패: {}", e.getMessage());
             }
         }
 
-        log.warn("⚠️ 모든 바코드 선택자로 요소를 찾을 수 없습니다");
-        return null;
+        throw new ResultError(winningRound + "회 로또6/45 구매 내역을 찾을 수 없습니다.", null);
     }
 
     /**
@@ -1278,7 +1172,7 @@ public class LottoServiceImpl implements LottoService {
                     }
                 }
 
-                if (numbers.size() == 6) {
+                if (isValidTicket(numbers)) {
                     result.add(numbers);
                     log.info("📋 티켓 {}: {}", ticketIndex, numbers);
                     ticketIndex++;
@@ -1322,8 +1216,10 @@ public class LottoServiceImpl implements LottoService {
             for (int j = 0; j < 6; j++) {
                 ticket.add(allNumbers.get(i + j));
             }
-            result.add(ticket);
-            log.info("📋 티켓 {}: {}", result.size(), ticket);
+            if (isValidTicket(ticket)) {
+                result.add(ticket);
+                log.info("📋 티켓 {}: {}", result.size(), ticket);
+            }
         }
 
         log.info("✅ 총 {}개의 티켓 구성", result.size());
@@ -1349,7 +1245,7 @@ public class LottoServiceImpl implements LottoService {
             }
 
             // 중복 제거
-            if (!result.contains(numbers)) {
+            if (isValidTicket(numbers) && !result.contains(numbers)) {
                 result.add(numbers);
                 log.info("📋 페이지 소스에서 추출된 번호: {}", numbers);
             }
@@ -1433,20 +1329,16 @@ public class LottoServiceImpl implements LottoService {
     }
 
     public List<String> lucky(WebDriver driver, WebDriverWait wait) {
-        driver.get("https://dhlottery.co.kr/common.do?method=main");
+        driver.get("https://www.dhlottery.co.kr/main");
         List<String> result = new ArrayList<>();
 
         try {
             log.info("🔍 로또 당첨 번호 조회 시작...");
             Thread.sleep(3000); // 페이지 로딩 대기
 
-            // 1. 회차 정보 가져오기 (예: 1100회)
-            WebElement roundElem = wait.until(ExpectedConditions.presenceOfElementLocated(By.cssSelector(".lt645-round")));
-            String round = roundElem.getText();
-            log.info("📊 회차: {}", round);
-
-            // 2. 당첨 번호 추출 (여러 방식 시도)
-            List<String> allNumbers = extractWinningNumbers(driver, wait);
+            // 최신 회차 컨테이너에서만 당첨 번호 추출
+            wait.until(ExpectedConditions.presenceOfElementLocated(By.cssSelector(".lt645-inbox[data-ltepsd]")));
+            List<String> allNumbers = extractWinningNumbers(driver);
 
             if (allNumbers.isEmpty()) {
                 log.error("❌ 당첨 번호를 추출할 수 없습니다");
@@ -1488,91 +1380,39 @@ public class LottoServiceImpl implements LottoService {
     /**
      * 로또 당첨 번호 추출 (여러 방식 시도)
      */
-    private List<String> extractWinningNumbers(WebDriver driver, WebDriverWait wait) throws InterruptedException {
-        // 방법 1: CSS 선택자로 공 요소 찾기 (.lt-ball)
-        try {
-            log.info("📋 방법 1: .lt-ball CSS 선택자로 시도...");
-            List<WebElement> ballElements = driver.findElements(By.cssSelector(".lt645-list .lt-ball"));
-            List<String> numbers = extractNumbersFromBalls(ballElements);
+    List<String> extractWinningNumbers(WebDriver driver) {
+        WebElement latestRound = latestWinningRound(driver);
 
-            if (!numbers.isEmpty()) {
-                log.info("✅ 방법 1 성공: {}개 번호 추출", numbers.size());
-                logNumbers("추출된 번호", numbers);
-                return numbers;
-            }
-        } catch (Exception e) {
-            log.debug("❌ 방법 1 실패: {}", e.getMessage());
+        String round = latestRound.findElement(By.cssSelector(".lt645-round")).getText().trim();
+        List<String> numbers = extractNumbersFromBalls(latestRound.findElements(By.cssSelector(".lt-ball")));
+
+        if (numbers.size() != 7 || new HashSet<>(numbers).size() != 7
+                || numbers.stream().anyMatch(number -> !isLotteryNumber(number))) {
+            throw new IllegalStateException("최신 회차 당첨 번호 7개를 정확히 추출하지 못했습니다: " + numbers.size());
         }
 
-        // 방법 2: 다양한 공 요소 선택자
+        log.info("📊 최신 회차: {}", round);
+        logNumbers("추출된 번호", numbers);
+        return numbers;
+    }
+
+    int extractWinningRound(WebDriver driver) {
+        return roundNumber(latestWinningRound(driver));
+    }
+
+    private WebElement latestWinningRound(WebDriver driver) {
+        return driver.findElements(By.cssSelector(".lt645-inbox[data-ltepsd]")).stream()
+                .max(Comparator.comparingInt(this::roundNumber))
+                .orElseThrow(() -> new IllegalStateException("로또 당첨 회차를 찾을 수 없습니다."));
+    }
+
+    private int roundNumber(WebElement roundElement) {
+        String value = roundElement.getAttribute("data-ltepsd");
         try {
-            log.info("📋 방법 2: 다양한 공 요소 선택자로 시도...");
-            String[] ballSelectors = {
-                    ".lotto-ball",
-                    ".ball",
-                    "[class*='ball']",
-                    ".lt645 .num",
-                    ".winning-number"
-            };
-
-            for (String selector : ballSelectors) {
-                try {
-                    List<WebElement> ballElements = driver.findElements(By.cssSelector(selector));
-                    if (!ballElements.isEmpty()) {
-                        List<String> numbers = extractNumbersFromBalls(ballElements);
-                        if (!numbers.isEmpty()) {
-                            log.info("✅ 방법 2 성공 ({}): {}개 번호 추출", selector, numbers.size());
-                            logNumbers("추출된 번호", numbers);
-                            return numbers;
-                        }
-                    }
-                } catch (Exception ignored) {
-                }
-            }
-        } catch (Exception e) {
-            log.debug("❌ 방법 2 실패: {}", e.getMessage());
+            return Integer.parseInt(value);
+        } catch (NumberFormatException e) {
+            throw new IllegalStateException("올바르지 않은 로또 회차: " + value, e);
         }
-
-        // 방법 3: span 요소에서 숫자 추출
-        try {
-            log.info("📋 방법 3: span 요소에서 숫자 추출...");
-            List<WebElement> spanElements = driver.findElements(By.cssSelector(".lt645-list span, .winning-numbers span"));
-            List<String> numbers = extractNumbersFromElements(spanElements);
-
-            if (numbers.size() >= 7) {
-                log.info("✅ 방법 3 성공: {}개 번호 추출", numbers.size());
-                logNumbers("추출된 번호", numbers);
-                return numbers;
-            }
-        } catch (Exception e) {
-            log.debug("❌ 방법 3 실패: {}", e.getMessage());
-        }
-
-        // 방법 4: 페이지 소스 분석
-        try {
-            log.info("📋 방법 4: 페이지 소스 정규식으로 추출...");
-            String pageSource = driver.getPageSource();
-            List<String> numbers = extractNumbersFromPageSourceRegex(pageSource);
-
-            if (!numbers.isEmpty()) {
-                log.info("✅ 방법 4 성공: {}개 번호 추출", numbers.size());
-                logNumbers("추출된 번호", numbers);
-                return numbers;
-            }
-        } catch (Exception e) {
-            log.debug("❌ 방법 4 실패: {}", e.getMessage());
-        }
-
-        // 방법 5: 페이지 구조 분석 후 상세 로깅
-        try {
-            log.info("📋 방법 5: 페이지 구조 분석...");
-            analyzeWinningNumbersStructure(driver);
-        } catch (Exception e) {
-            log.debug("❌ 방법 5 실패: {}", e.getMessage());
-        }
-
-        log.error("❌ 모든 방법으로 번호 추출 실패");
-        return new ArrayList<>();
     }
 
     /**
@@ -1593,6 +1433,23 @@ public class LottoServiceImpl implements LottoService {
         }
 
         return numbers;
+    }
+
+    private boolean isValidTicket(List<String> numbers) {
+        if (numbers.size() != 6 || new HashSet<>(numbers).size() != 6) {
+            return false;
+        }
+
+        return numbers.stream().allMatch(this::isLotteryNumber);
+    }
+
+    private boolean isLotteryNumber(String number) {
+        try {
+            int value = Integer.parseInt(number);
+            return value >= 1 && value <= 45;
+        } catch (NumberFormatException e) {
+            return false;
+        }
     }
 
     /**
@@ -1704,7 +1561,7 @@ public class LottoServiceImpl implements LottoService {
     }
 
     public void checkWinning(List<List<String>> myNumbers, List<String> luckyNumbers) {
-        if (luckyNumbers.isEmpty()) {
+        if (luckyNumbers.size() != 7) {
             log.error("당첨 번호를 가져오지 못했습니다.");
             mattermostUtil.send("❌ 당첨 번호를 가져오지 못했습니다.", "5zqu88zsef83x8kj86igsqe1wa");
             return;
@@ -1771,7 +1628,7 @@ public class LottoServiceImpl implements LottoService {
     }
 
     public void checkWinningWebhook(List<List<String>> myNumbers, List<String> luckyNumbers, WebhookDTO webhookDTO) {
-        if (luckyNumbers.isEmpty()) {
+        if (luckyNumbers.size() != 7) {
             log.error("당첨 번호를 가져오지 못했습니다.");
             mattermostUtil.sendWebhookChannel("❌ 당첨 번호를 가져오지 못했습니다.", webhookDTO);
             return;
@@ -1846,8 +1703,12 @@ public class LottoServiceImpl implements LottoService {
 
     public class ResultError extends RuntimeException {
         public ResultError() {
-            super("구매목록이 존재하지 않습니다.");
-            mattermostUtil.send("구매목록이 존재하지 않습니다.", "5zqu88zsef83x8kj86igsqe1wa");
+            this("구매목록이 존재하지 않거나 번호를 추출할 수 없습니다.", null);
+        }
+
+        public ResultError(String message, Throwable cause) {
+            super(message, cause);
+            mattermostUtil.send(message, "5zqu88zsef83x8kj86igsqe1wa");
         }
     }
 }

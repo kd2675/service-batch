@@ -68,12 +68,14 @@ public class BatchApiController {
             batchApiService.validateServiceRequest(request);
             batchApiService.service(request);
 
-            return response(true, Code.OK_ASYNC);
+            return response(true, Code.OK);
+        } catch (IllegalArgumentException e) {
+            log.error("BatchApiController service validation error", e);
+            return response(false, Code.BAD_REQUEST);
         } catch (Exception e) {
-            log.error("BatchApiController execute error", e);
+            log.error("BatchApiController service execution error", e);
+            return response(false, Code.INTERNAL_SERVER_ERROR);
         }
-
-        return response(false, Code.BAD_REQUEST);
     }
 
     private ResponseEntity<ResponseDTO> response(boolean success, Code code) {

@@ -3,7 +3,6 @@ package com.service.batch.service.sport.biz;
 import com.service.batch.utils.MattermostUtil;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.jetbrains.annotations.NotNull;
 import org.openqa.selenium.Alert;
 import org.openqa.selenium.By;
 import org.openqa.selenium.JavascriptExecutor;
@@ -15,7 +14,9 @@ import org.openqa.selenium.chrome.ChromeOptions;
 import org.openqa.selenium.interactions.Actions;
 import org.openqa.selenium.support.ui.ExpectedConditions;
 import org.openqa.selenium.support.ui.WebDriverWait;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
+import org.springframework.util.StringUtils;
 
 import java.time.Duration;
 import java.util.Arrays;
@@ -28,10 +29,15 @@ import java.util.Set;
 public class ReserveSportImpl implements ReserveSportSVC {
     private final MattermostUtil mattermostUtil;
 
+    @Value("${sport.username:}")
+    private String sportUsername;
+
+    @Value("${sport.password:}")
+    private String sportPassword;
+
     private record ChromeRec(WebDriver webDriver, WebDriverWait webDriverWait) {
     }
 
-    @NotNull
     private static ChromeRec chromeRec() {
         ChromeOptions options = new ChromeOptions();
         options.addArguments("--headless");
@@ -308,14 +314,18 @@ public class ReserveSportImpl implements ReserveSportSVC {
 
 
     private void login(WebDriver driver, WebDriverWait wait) {
+        if (!StringUtils.hasText(sportUsername) || !StringUtils.hasText(sportPassword)) {
+            throw new IllegalStateException("SPORTS_USERNAME and SPORTS_PASSWORD must be configured");
+        }
+
         driver.get("https://www.gwangjusportsinfo.org/space/space_view/1");
         driver.navigate().to("https://www.gwangjusportsinfo.org/login");
 
         WebElement idElement = driver.findElement(By.cssSelector("input[placeholder='아이디']"));
-        idElement.sendKeys("kd2675");
+        idElement.sendKeys(sportUsername);
 
         WebElement pwElement = driver.findElement(By.cssSelector("input[placeholder='비밀번호']"));
-        pwElement.sendKeys("Whitered2@");
+        pwElement.sendKeys(sportPassword);
 
         // 로그인 버튼 클릭
         WebElement loginButton = wait.until(ExpectedConditions.elementToBeClickable(

@@ -36,7 +36,7 @@ dependencies {
     // https://mvnrepository.com/artifact/org.jsoup/jsoup
     implementation group: 'org.jsoup', name: 'jsoup', version: '1.15.3'
     // https://mvnrepository.com/artifact/org.seleniumhq.selenium/selenium-java
-    implementation group: 'org.seleniumhq.selenium', name: 'selenium-java', version: '3.141.59'
+    implementation group: 'org.seleniumhq.selenium', name: 'selenium-java', version: '4.14.1'
 //    implementation group: 'org.seleniumhq.selenium', name: 'selenium-devtools-v86', version: '4.14.1'
     //json
     implementation group: 'org.json', name: 'json', version: '20231013'
