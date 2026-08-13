@@ -1,0 +1,6 @@
+USE CRAWLING;
+
+ALTER TABLE NEWS
+    ADD INDEX idx_news_link (link(191)),
+    ALGORITHM=INPLACE,
+    LOCK=NONE;

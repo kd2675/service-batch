@@ -6,6 +6,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 import org.springframework.lang.NonNull;
 import org.springframework.stereotype.Repository;
 
@@ -26,7 +27,8 @@ public interface NewsREP extends JpaRepository<NewsEntity, Long> {
             @NonNull Collection<String> categories,
             @NonNull LocalDateTime createDate
     );
-    boolean existsByLink(@NonNull String link);
+    @Query("select distinct n.link from NewsEntity n where n.link in :links")
+    List<String> findExistingLinks(@NonNull @Param("links") Collection<String> links);
 
     Page<NewsEntity> findAll(Specification<NewsEntity> spec, Pageable pageable);
 

@@ -41,6 +41,7 @@ import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
 import java.util.*;
+import java.util.stream.Collectors;
 
 @Slf4j
 @RequiredArgsConstructor
@@ -141,9 +142,9 @@ public class NewsReader {
                 List<NaverNewsApiItemVO> items = getItems(s, start);
                 set.addAll(items.stream()
                         .peek(v -> v.setCategory(s))
+                        .filter(v -> StringUtils.isNotBlank(v.getLink()))
                         .filter(v -> LocalDateTime.parse(v.getPubDate(), DateTimeFormatter.RFC_1123_DATE_TIME).isAfter(LOCAL_DATE_TIME_2)
                                 && LocalDateTime.parse(v.getPubDate(), DateTimeFormatter.RFC_1123_DATE_TIME).isBefore(LOCAL_DATE_TIME_1))
-                        .filter(v -> !newsREP.existsByLink(v.getLink()))
                         .toList()
                 );
                 start += 100;
@@ -156,7 +157,12 @@ public class NewsReader {
             } while (start < 1000);
         }
 
-        List<NaverNewsApiItemVO> news = new ArrayList<>(set);
+        Set<String> newLinks = findNewLinks(set.stream()
+                .map(NaverNewsApiItemVO::getLink)
+                .collect(Collectors.toSet()));
+        List<NaverNewsApiItemVO> news = new ArrayList<>(set.stream()
+                .filter(item -> newLinks.remove(item.getLink()))
+                .toList());
         Collections.sort(news);
 
         try {
@@ -190,6 +196,8 @@ public class NewsReader {
             }
         }
 
+        Set<String> newLinks = findNewLinks(links);
+        news.removeIf(item -> !newLinks.contains(item.getLink()));
         Collections.sort(news);
         return news;
     }
@@ -199,11 +207,20 @@ public class NewsReader {
             if (item.getPubDate().isAfter(from)
                     && item.getPubDate().isBefore(to)
                     && links.add(item.getLink())
-                    && !newsREP.existsByLink(item.getLink())
             ) {
                 news.add(item);
             }
         }
+    }
+
+    Set<String> findNewLinks(Collection<String> links) {
+        if (links.isEmpty()) {
+            return new HashSet<>();
+        }
+
+        Set<String> newLinks = new HashSet<>(links);
+        newLinks.removeAll(newsREP.findExistingLinks(List.copyOf(newLinks)));
+        return newLinks;
     }
 
     private List<RssNewsItemVO> getRssItems(String source, String category, String url) {

@@ -27,6 +27,7 @@ import org.springframework.transaction.PlatformTransactionManager;
 @Configuration
 public class NewsStep {
     private static final int CHUNK_SIZE = 100;
+    private static final int INSERT_CHUNK_SIZE = 500;
 
     public static final String INS_NEWS_STEP = "insNewsStep";
     public static final String INS_RSS_NEWS_STEP = "insRssNewsStep";
@@ -47,7 +48,7 @@ public class NewsStep {
             @Qualifier(NewsWriter.JPA_ITEM_WRITER) JpaItemWriter<NewsEntity> itemWriter
     ) {
         return new StepBuilder(INS_NEWS_STEP, jobRepository)
-                .<NaverNewsApiItemVO, NewsEntity>chunk(CHUNK_SIZE, platformTransactionManager)
+                .<NaverNewsApiItemVO, NewsEntity>chunk(INSERT_CHUNK_SIZE, platformTransactionManager)
                 .reader(itemReader)
                 .processor(itemProcessor)
                 .writer(itemWriter)
@@ -65,7 +66,7 @@ public class NewsStep {
             @Qualifier(NewsWriter.JPA_ITEM_WRITER) JpaItemWriter<NewsEntity> itemWriter
     ) {
         return new StepBuilder(INS_RSS_NEWS_STEP, jobRepository)
-                .<RssNewsItemVO, NewsEntity>chunk(CHUNK_SIZE, platformTransactionManager)
+                .<RssNewsItemVO, NewsEntity>chunk(INSERT_CHUNK_SIZE, platformTransactionManager)
                 .reader(itemReader)
                 .processor(itemProcessor)
                 .writer(itemWriter)
