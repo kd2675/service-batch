@@ -6,8 +6,8 @@ import org.example.core.request.BatchServiceRequest;
 public interface BatchApiService {
     void validateExecuteRequest(BatchExecuteRequest request) throws Exception;
     void validateServiceRequest(BatchServiceRequest request);
-    void executeAsync(BatchExecuteRequest request) throws Exception;
-    void execute(BatchExecuteRequest request) throws Exception;
+    BatchExecutionResult executeAsync(BatchExecuteRequest request) throws Exception;
+    BatchExecutionResult execute(BatchExecuteRequest request) throws Exception;
     void serviceAsync(BatchServiceRequest request);
     void service(BatchServiceRequest request);
 }

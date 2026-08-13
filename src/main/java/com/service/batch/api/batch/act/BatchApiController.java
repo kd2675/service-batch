@@ -1,6 +1,7 @@
 package com.service.batch.api.batch.act;
 
 import com.service.batch.api.batch.biz.BatchApiService;
+import com.service.batch.api.batch.biz.BatchExecutionResult;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.example.core.request.BatchExecuteRequest;
@@ -24,9 +25,7 @@ public class BatchApiController {
     public ResponseEntity<ResponseDTO> executeAsync(@RequestBody BatchExecuteRequest request) {
         try {
             batchApiService.validateExecuteRequest(request);
-            batchApiService.executeAsync(request);
-
-            return response(true, Code.OK_ASYNC);
+            return executionResponse(batchApiService.executeAsync(request));
         } catch (Exception e) {
             log.error("BatchApiController execute error", e);
         }
@@ -38,9 +37,7 @@ public class BatchApiController {
     public ResponseEntity<ResponseDTO> execute(@RequestBody BatchExecuteRequest request) {
         try {
             batchApiService.validateExecuteRequest(request);
-            batchApiService.execute(request);
-
-            return response(true, Code.OK_ASYNC);
+            return executionResponse(batchApiService.execute(request));
         } catch (Exception e) {
             log.error("BatchApiController execute error", e);
         }
@@ -81,5 +78,12 @@ public class BatchApiController {
     private ResponseEntity<ResponseDTO> response(boolean success, Code code) {
         return ResponseEntity.status(code.getHttpStatus())
                 .body(ResponseDTO.of(success, code));
+    }
+
+    private ResponseEntity<ResponseDTO> executionResponse(BatchExecutionResult result) {
+        if (result.isSkipped()) {
+            return response(true, Code.OK_SKIPPED);
+        }
+        return response(true, result == BatchExecutionResult.ACCEPTED ? Code.OK_ASYNC : Code.OK);
     }
 }
