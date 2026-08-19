@@ -13,8 +13,8 @@ import java.net.URI;
 @RequiredArgsConstructor
 @Service
 public class NaverApiUtilImpl implements NaverApiUtil{
-    private static final String NAVER_API_URL = "https://openapi.naver.com";
-    private static final String NAVER_API_PATH = "/v1/search/";
+    private static final String NAVER_API_URL = "https://naverapihub.apigw.ntruss.com";
+    private static final String NAVER_API_PATH = "/search/v1/";
     private static final String NAVER_API_CLIENT_ID = "fb7059v737";
     private static final String NAVER_API_CLIENT_SECRET = "tUpXk3Zp1kyMdsRJr6IcsKeXhUxchmnTvlUeFVCL";
 
@@ -26,7 +26,7 @@ public class NaverApiUtilImpl implements NaverApiUtil{
         //속보 코인 주식(주가)
         URI uri = UriComponentsBuilder
                 .fromUriString(NAVER_API_URL)
-                .path(NAVER_API_PATH + path + ".json")
+                .path(NAVER_API_PATH + path)
                 .queryParam("query", query)
                 .queryParam("display", display)
                 .queryParam("start", start)
@@ -37,8 +37,8 @@ public class NaverApiUtilImpl implements NaverApiUtil{
 
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.APPLICATION_JSON);
-        headers.set("X-Naver-Client-Id", NAVER_API_CLIENT_ID);
-        headers.set("X-Naver-Client-Secret", NAVER_API_CLIENT_SECRET);
+        headers.set("X-NCP-APIGW-API-KEY-ID", NAVER_API_CLIENT_ID);
+        headers.set("X-NCP-APIGW-API-KEY", NAVER_API_CLIENT_SECRET);
 
         // Request Body 설정
 //        JSONObject requestBody = new JSONObject();
