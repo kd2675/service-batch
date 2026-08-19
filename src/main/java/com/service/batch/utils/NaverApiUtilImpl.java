@@ -15,8 +15,8 @@ import java.net.URI;
 public class NaverApiUtilImpl implements NaverApiUtil{
     private static final String NAVER_API_URL = "https://openapi.naver.com";
     private static final String NAVER_API_PATH = "/v1/search/";
-    private static final String NAVER_API_CLIENT_ID = "97avHwhY7N2bJ4RysxAx";
-    private static final String NAVER_API_CLIENT_SECRET = "74r7XpIXPi";
+    private static final String NAVER_API_CLIENT_ID = "fb7059v737";
+    private static final String NAVER_API_CLIENT_SECRET = "tUpXk3Zp1kyMdsRJr6IcsKeXhUxchmnTvlUeFVCL";
 
     private final RestTemplate restTemplate;
 
