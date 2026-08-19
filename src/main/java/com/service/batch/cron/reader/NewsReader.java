@@ -165,11 +165,11 @@ public class NewsReader {
                 .toList());
         Collections.sort(news);
 
-        try {
-            this.newsSubscribeAlim(news);
-        } catch (Exception e) {
-            log.error("hotdealAlimSend error : {}", e);
-        }
+//        try {
+//            this.newsSubscribeAlim(news);
+//        } catch (Exception e) {
+//            log.error("hotdealAlimSend error : {}", e);
+//        }
 
         return news;
     }

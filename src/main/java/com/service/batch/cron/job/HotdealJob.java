@@ -17,7 +17,7 @@ public class HotdealJob {
     public static final String DEL_HOTDEAL_JOB = "delHotdealJob";
 
     @Bean(name = INS_HOTDEAL_JOB)
-    public Job insNewsJob(
+    public Job insHotdealJob(
             JobRepository jobRepository,
             @Qualifier(HotdealStep.INS_HOTDEAL_STEP) Step step
     ) {
